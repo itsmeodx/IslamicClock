@@ -2141,6 +2141,12 @@
                             });
                             this.state.prayerTimes = adjustedTimes;
 
+                            // Update cache with new DST-adjusted times
+                            const today = new Date().toDateString();
+                            const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
+                            const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
+                            this.setCache(newCacheKey, this.state.prayerTimes);
+
                             // Immediately redraw the analog clock
                             if (this.state.clockType === 'analog') {
                                 this.drawAnalogClock();
@@ -2169,6 +2175,12 @@
                             // Reapply all adjustments with new offsets
                             this.state.prayerTimes = this.applyTimeAdjustments(originalTimes);
 
+                            // Update cache with new adjusted times
+                            const today = new Date().toDateString();
+                            const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
+                            const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
+                            this.setCache(newCacheKey, this.state.prayerTimes);
+
                             // Immediately redraw the analog clock
                             if (this.state.clockType === 'analog') {
                                 this.drawAnalogClock();
@@ -2176,14 +2188,15 @@
                         }
                     }
 
-                    // Clear cached prayer times and fetch fresh ones for consistency
-                    this.clearPrayerTimesCache();
-                    this.state.lastFetchDate = null; // Force refresh
-                    this.state.prayerTimes = null; // Clear current prayer times to force fetch
-                    this.state.retryCount = 0;
-
-                    // Always await for immediate display when method changes
+                    // Only make API calls if calculation method changed
+                    // For DST and offset changes, we can adjust existing times without new API calls
                     if (methodChanged) {
+                        // Clear cached prayer times and fetch fresh ones for method changes
+                        this.clearPrayerTimesCache();
+                        this.state.lastFetchDate = null; // Force refresh
+                        this.state.prayerTimes = null; // Clear current prayer times to force fetch
+                        this.state.retryCount = 0;
+
                         console.log('Calculation method changed, fetching new prayer times...');
                         await this.fetchPrayerTimes(true); // Force refresh bypassing rate limit
                         console.log('New prayer times fetched, redrawing clock...');
@@ -2193,14 +2206,7 @@
                             this.drawAnalogClock();
                         }
                     } else {
-                        // For non-method changes, still force refresh if DST or offsets changed
-                        if (dstChanged || offsetsChanged) {
-                            this.fetchPrayerTimes(true); // Force refresh for DST/offset changes
-                        } else {
-                            this.fetchPrayerTimes(); // Normal fetch for other changes
-                        }
-
-                        // Still redraw if we applied immediate adjustments above
+                        // For DST and offset changes, just redraw with the adjusted times we already computed above
                         if ((dstChanged || offsetsChanged) && this.state.clockType === 'analog') {
                             this.drawAnalogClock();
                         }
