@@ -605,6 +605,18 @@
             </div>
 
             <div class="settings-group">
+                <label for="progress-toggle" id="progress-section-label">Show Progress Section:</label>
+                <div class="toggle-container">
+                    <span class="toggle-label-left" id="progress-hide-label">Hide</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="progress-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label-right" id="progress-show-label">Show</span>
+                </div>
+            </div>
+
+            <div class="settings-group">
                 <label id="prayer-adjustments-label">Prayer Time Adjustments (minutes):</label>
                 <div class="offset-controls">
                     <div class="offset-item">
@@ -684,6 +696,7 @@
                     language: localStorage.getItem('language') || 'en', // 'en' or 'ar'
                     calculationMethod: localStorage.getItem('calculationMethod') || this.config.defaultCalculationMethod,
                     daylightSaving: parseInt(localStorage.getItem('daylightSaving') || '0'), // -1, 0, or 1
+                    showProgress: localStorage.getItem('showProgress') !== 'false', // true by default
                     prayerOffsets: JSON.parse(localStorage.getItem('prayerOffsets') || '{"Fajr":0,"Sunrise":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0}'),
                     prayerTimes: null,
                     location: null,
@@ -714,6 +727,7 @@
                     languageToggle: document.getElementById('language-toggle'),
                     calculationMethod: document.getElementById('calculation-method'),
                     dstToggle: document.getElementById('dst-toggle'),
+                    progressToggle: document.getElementById('progress-toggle'),
                     saveSettings: document.getElementById('save-settings'),
                     resetSettings: document.getElementById('reset-settings'),
                     refreshData: document.getElementById('refresh-data'),
@@ -793,6 +807,9 @@
                         daylightSaving: 'Daylight Saving Time',
                         dstOff: 'Off',
                         dstOn: 'On (+1h)',
+                        progressSection: 'Show Progress Section',
+                        progressHide: 'Hide',
+                        progressShow: 'Show',
                         prayerTimeAdjustments: 'Prayer Time Adjustments (minutes)',
                         save: 'Save',
                         reset: 'Reset',
@@ -863,6 +880,9 @@
                         daylightSaving: 'التوقيت الصيفي',
                         dstOff: 'معطل',
                         dstOn: 'مفعل (+١س)',
+                        progressSection: 'إظهار قسم التقدم',
+                        progressHide: 'إخفاء',
+                        progressShow: 'إظهار',
                         prayerTimeAdjustments: 'تعديل أوقات الصلاة (بالدقائق)',
                         save: 'حفظ',
                         reset: 'إعادة تعيين',
@@ -1238,6 +1258,7 @@
                 const languageLabel = document.getElementById('language-label');
                 const calculationMethodLabel = document.getElementById('calculation-method-label');
                 const daylightSavingLabel = document.getElementById('daylight-saving-label');
+                const progressSectionLabel = document.getElementById('progress-section-label');
                 const prayerAdjustmentsLabel = document.getElementById('prayer-adjustments-label');
                 const saveBtn = document.getElementById('save-settings');
                 const resetBtn = document.getElementById('reset-settings');
@@ -1247,6 +1268,7 @@
                 if (languageLabel) languageLabel.textContent = this.getText('language') + ':';
                 if (calculationMethodLabel) calculationMethodLabel.textContent = this.getText('calculationMethod') + ':';
                 if (daylightSavingLabel) daylightSavingLabel.textContent = this.getText('daylightSaving') + ':';
+                if (progressSectionLabel) progressSectionLabel.textContent = this.getText('progressSection') + ':';
                 if (prayerAdjustmentsLabel) prayerAdjustmentsLabel.textContent = this.getText('prayerTimeAdjustments') + ':';
                 if (saveBtn) saveBtn.textContent = this.getText('save');
                 if (resetBtn) resetBtn.textContent = this.getText('reset');
@@ -1297,6 +1319,12 @@
                 const dstOnLabel = document.getElementById('dst-on-label');
                 if (dstOffLabel) dstOffLabel.textContent = this.getText('dstOff');
                 if (dstOnLabel) dstOnLabel.textContent = this.getText('dstOn');
+
+                // Update progress toggle labels
+                const progressHideLabel = document.getElementById('progress-hide-label');
+                const progressShowLabel = document.getElementById('progress-show-label');
+                if (progressHideLabel) progressHideLabel.textContent = this.getText('progressHide');
+                if (progressShowLabel) progressShowLabel.textContent = this.getText('progressShow');
             }
 
             updateClockDisplay() {
@@ -1770,8 +1798,10 @@
 
                     this.ctx.restore();
 
-                    // Prayer progress information
-                    this.drawProgressInfo(prayerProgress, squareX, squareY, squareWidth, squareHeight);
+                    // Prayer progress information - only show if enabled
+                    if (this.state.showProgress) {
+                        this.drawProgressInfo(prayerProgress, squareX, squareY, squareWidth, squareHeight);
+                    }
                 }
                 // If no prayer times available, don't show any loading message
             }            drawProgressInfo(prayerProgress, squareX, squareY, squareWidth, squareHeight) {
@@ -1979,6 +2009,7 @@
                 this.dom.languageToggle.checked = this.state.language === 'ar';
                 this.dom.calculationMethod.value = this.state.calculationMethod;
                 this.dom.dstToggle.checked = this.state.daylightSaving === 1;
+                this.dom.progressToggle.checked = this.state.showProgress;
 
                 // Set prayer offsets
                 this.dom.fajrOffset.value = this.state.prayerOffsets.Fajr;
@@ -2002,6 +2033,7 @@
                 const newLanguage = this.dom.languageToggle.checked ? 'ar' : 'en';
                 const newCalculationMethod = this.dom.calculationMethod.value;
                 const newDaylightSaving = this.dom.dstToggle.checked ? 1 : 0;
+                const newShowProgress = this.dom.progressToggle.checked;
                 const newOffsets = {
                     Fajr: parseInt(this.dom.fajrOffset.value) || 0,
                     Sunrise: parseInt(this.dom.sunriseOffset.value) || 0,
@@ -2015,12 +2047,14 @@
                 const languageChanged = newLanguage !== this.state.language;
                 const methodChanged = newCalculationMethod !== this.state.calculationMethod;
                 const dstChanged = newDaylightSaving !== this.state.daylightSaving;
+                const progressChanged = newShowProgress !== this.state.showProgress;
                 const offsetsChanged = JSON.stringify(newOffsets) !== JSON.stringify(this.state.prayerOffsets);
 
                 console.log('Settings change detection:', {
                     languageChanged,
                     methodChanged: methodChanged ? `${this.state.calculationMethod} -> ${newCalculationMethod}` : false,
                     dstChanged,
+                    progressChanged,
                     offsetsChanged
                 });
 
@@ -2031,12 +2065,14 @@
                 this.state.language = newLanguage;
                 this.state.calculationMethod = newCalculationMethod;
                 this.state.daylightSaving = newDaylightSaving;
+                this.state.showProgress = newShowProgress;
                 this.state.prayerOffsets = newOffsets;
 
                 // Save to localStorage
                 localStorage.setItem('language', newLanguage);
                 localStorage.setItem('calculationMethod', newCalculationMethod);
                 localStorage.setItem('daylightSaving', newDaylightSaving.toString());
+                localStorage.setItem('showProgress', newShowProgress.toString());
                 localStorage.setItem('prayerOffsets', JSON.stringify(newOffsets));
 
                 // Update UI if language changed
@@ -2133,6 +2169,11 @@
                     }
                 }
 
+                // Redraw analog clock if progress toggle changed
+                if (progressChanged && this.state.clockType === 'analog') {
+                    this.drawAnalogClock();
+                }
+
                 // Close settings menu
                 this.closeSettingsMenu();
             }
@@ -2142,6 +2183,7 @@
                 this.state.language = 'en';
                 this.state.calculationMethod = this.config.defaultCalculationMethod;
                 this.state.daylightSaving = 0;
+                this.state.showProgress = true;
                 this.state.prayerOffsets = {
                     Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0
                 };
@@ -2150,6 +2192,7 @@
                 localStorage.setItem('language', 'en');
                 localStorage.setItem('calculationMethod', this.config.defaultCalculationMethod);
                 localStorage.setItem('daylightSaving', '0');
+                localStorage.setItem('showProgress', 'true');
                 localStorage.setItem('prayerOffsets', JSON.stringify(this.state.prayerOffsets));
 
                 // Update UI
