@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Islamic Prayer Clock</title>
     <style>
+        :root {
+            direction: ltr;
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+        }
+
+        :root[dir="rtl"] {
+            direction: rtl;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -759,11 +769,11 @@
 
                 // Update button styles and text direction for RTL/LTR
                 if (this.state.language === 'ar') {
-                    document.body.setAttribute('dir', 'rtl');
+                    document.documentElement.setAttribute('dir', 'rtl');
                     document.body.style.textAlign = 'right';
                     this.dom.languageBtn.style.fontFamily = 'Arial, Tahoma, sans-serif';
                 } else {
-                    document.body.setAttribute('dir', 'ltr');
+                    document.documentElement.setAttribute('dir', 'ltr');
                     document.body.style.textAlign = 'left';
                     this.dom.languageBtn.style.fontFamily = 'Arial, sans-serif';
                 }
@@ -1460,18 +1470,31 @@
                     (this.state.hijriDate.monthAr || this.state.hijriDate.month) &&
                     this.state.hijriDate.year) {
 
-                    // Use Arabic if available, otherwise fallback to English
-                    const monthName = this.state.hijriDate.monthAr || this.state.hijriDate.month;
-                    const weekdayName = this.state.hijriDate.weekdayAr || this.state.hijriDate.weekday || '';
+                    let monthName, weekdayName, day, year, hijriText;
 
-                    // Convert numbers to Arabic numerals
-                    const arabicDay = this.toArabicNumerals(this.state.hijriDate.day);
-                    const arabicYear = this.toArabicNumerals(this.state.hijriDate.year);
+                    if (this.state.language === 'ar') {
+                        // Arabic format
+                        monthName = this.state.hijriDate.monthAr || this.state.hijriDate.month;
+                        weekdayName = this.state.hijriDate.weekdayAr || this.state.hijriDate.weekday || '';
+                        day = this.toArabicNumerals(this.state.hijriDate.day);
+                        year = this.toArabicNumerals(this.state.hijriDate.year);
 
-                    // Format: "الاثنين ١٢ محرم ١٤٤٧ هـ"
-                    const hijriText = weekdayName
-                        ? `🌙 ${weekdayName} ${arabicDay} ${monthName} ${arabicYear} هـ`
-                        : `🌙 ${arabicDay} ${monthName} ${arabicYear} هـ`;
+                        // Format: "الاثنين ١٢ محرم ١٤٤٧ هـ"
+                        hijriText = weekdayName
+                            ? `🌙 ${weekdayName} ${day} ${monthName} ${year} هـ`
+                            : `🌙 ${day} ${monthName} ${year} هـ`;
+                    } else {
+                        // English format
+                        monthName = this.state.hijriDate.month;
+                        weekdayName = this.state.hijriDate.weekday || '';
+                        day = this.state.hijriDate.day;
+                        year = this.state.hijriDate.year;
+
+                        // Format: "Monday 12 Muharram 1447 AH"
+                        hijriText = weekdayName
+                            ? `🌙 ${weekdayName} ${day} ${monthName} ${year} AH`
+                            : `🌙 ${day} ${monthName} ${year} AH`;
+                    }
 
                     this.dom.hijriDate.textContent = hijriText;
                     console.log('Hijri date displayed:', hijriText);
