@@ -45,12 +45,12 @@
         .clock-container {
             background: #ffffff;
             backdrop-filter: blur(10px);
-            border-radius: 25px;
-            padding: 35px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             border: 2px solid #d4af37;
             text-align: center;
-            max-width: 700px;
+            max-width: 600px;
             width: 100%;
             position: relative;
         }
@@ -74,7 +74,7 @@
 
         .islamic-decoration {
             position: relative;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .decoration-top,
@@ -86,17 +86,17 @@
         }
 
         .decoration-top {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .decoration-bottom {
-            margin-top: 8px;
+            margin-top: 6px;
         }
 
         .clock-title {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: #2c5530;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
             font-weight: bold;
             position: relative;
@@ -127,9 +127,9 @@
 
         .digital-clock {
             font-family: 'Courier New', monospace;
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #2c5530;
-            margin: 25px 0;
+            margin: 20px 0;
             text-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             font-weight: bold;
             position: relative;
@@ -137,9 +137,9 @@
         }
 
         .date-display {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #4a6b4a;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             font-weight: 500;
             position: relative;
@@ -168,7 +168,7 @@
         }
 
         .analog-clock {
-            margin: 20px 0;
+            margin: 15px 0;
             position: relative;
             display: inline-block;
         }
@@ -184,13 +184,13 @@
             background: #2c5530;
             color: #fff;
             border: none;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            border-radius: 25px;
+            padding: 12px 25px;
+            font-size: 1rem;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(44, 85, 48, 0.3);
-            margin-top: 25px;
+            margin-top: 20px;
             font-weight: bold;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
             border: 2px solid #d4af37;
@@ -219,23 +219,37 @@
         }
 
         .location-info {
-            margin-top: 18px;
-            font-size: 1.1rem;
+            margin-top: 15px;
+            font-size: 1rem;
             color: #2c5530;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             font-weight: 500;
             position: relative;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 8px;
             background: rgba(212, 175, 55, 0.1);
             border: 1px solid rgba(212, 175, 55, 0.3);
         }
 
+        .hijri-date {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #4a6b4a;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            position: relative;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(139, 69, 19, 0.1);
+            border: 1px solid rgba(139, 69, 19, 0.3);
+        }
+
         @media (max-width: 768px) {
-            .clock-title { font-size: 2rem; }
-            .digital-clock { font-size: 2.5rem; }
-            .clock-canvas { width: 350px; height: 350px; }
-            .clock-container { max-width: 400px; }
+            .clock-title { font-size: 1.8rem; }
+            .digital-clock { font-size: 2.2rem; }
+            .clock-canvas { width: 350px; height: 385px; }
+            .clock-container { max-width: 380px; }
+            .hijri-date { font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -253,8 +267,9 @@
         </div>
 
         <div id="analog-display" class="analog-clock" style="display: none;">
-            <canvas id="clock-canvas" class="clock-canvas" width="550" height="550"></canvas>
+            <canvas id="clock-canvas" class="clock-canvas" width="500" height="550"></canvas>
             <div id="location-info" class="location-info">📍 Getting location...</div>
+            <div id="hijri-date" class="hijri-date">🌙 Loading...</div>
         </div>
 
         <button id="toggle-btn" class="toggle-btn">Switch to Prayer Clock</button>
@@ -284,7 +299,10 @@
                     lastFetchDate: null, // Track last fetch date
                     isInitialized: false, // Track if initial setup is complete
                     lastApiCall: null, // Track last API call for rate limiting
-                    retryCount: 0 // Track API retry attempts
+                    retryCount: 0, // Track API retry attempts
+                    hijriDate: null, // Store Hijri date
+                    lastHijriFetch: null, // Track last Hijri date fetch
+                    lastHijriAttempt: null // Track last Hijri fetch attempt
                 };
 
                 // DOM Elements (cached)
@@ -295,7 +313,8 @@
                     dateDisplay: document.getElementById('date-display'),
                     toggleBtn: document.getElementById('toggle-btn'),
                     canvas: document.getElementById('clock-canvas'),
-                    locationInfo: document.getElementById('location-info')
+                    locationInfo: document.getElementById('location-info'),
+                    hijriDate: document.getElementById('hijri-date')
                 };
 
                 // Canvas context (cached)
@@ -313,20 +332,21 @@
                 ];
 
                 this.init();
-            }
-
-            async init() {
+            }            async init() {
                 try {
                     this.setupEventListeners();
                     this.updateClockDisplay();
                     await this.initializeLocation();
                     await this.fetchPrayerTimes();
+                    await this.fetchHijriDate();
                     this.state.isInitialized = true;
                     this.startClock();
                 } catch (error) {
                     console.error('Initialization error:', error);
                     this.state.isInitialized = true;
                     this.startClock(); // Start clock without prayer times - will only show current time
+                    // Try to fetch Hijri date even if other initialization fails
+                    this.fetchHijriDate();
                 }
             }
 
@@ -485,6 +505,88 @@
                 return null;
             }
 
+            async fetchHijriDate() {
+                const today = new Date().toDateString();
+                const cacheKey = `hijri-date-${today}`;
+
+                console.log('Fetching Hijri date for:', today);
+
+                // Check cache first
+                const cached = this.getFromCache(cacheKey);
+                if (cached) {
+                    console.log('Found cached Hijri date:', cached);
+                    this.state.hijriDate = cached;
+                    this.state.lastHijriFetch = today;
+                    this.updateHijriDate();
+                    return;
+                }
+
+                // Skip if already fetched today
+                if (this.state.lastHijriFetch === today && this.state.hijriDate) {
+                    console.log('Already fetched Hijri date today');
+                    return;
+                }
+
+                // Check for any existing Hijri cache as fallback
+                if (!this.state.hijriDate) {
+                    const fallbackCache = this.getAnyHijriCache();
+                    if (fallbackCache) {
+                        console.log('Using fallback Hijri cache:', fallbackCache);
+                        this.state.hijriDate = fallbackCache;
+                        this.updateHijriDate();
+                    }
+                }
+
+                try {
+                    const now = new Date();
+                    const dateString = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()}`;
+                    const url = `https://api.aladhan.com/v1/gToH/${dateString}`;
+
+                    console.log('Fetching Hijri date from:', url);
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    console.log('Hijri API response:', data);
+
+                    if (data.code === 200 && data.data && data.data.hijri) {
+                        const hijriData = data.data.hijri;
+                        console.log('Hijri data structure:', hijriData);
+
+                        this.state.hijriDate = {
+                            day: hijriData.day,
+                            month: hijriData.month?.en || hijriData.month,
+                            year: hijriData.year,
+                            weekday: hijriData.weekday?.en || hijriData.weekday
+                        };
+
+                        console.log('Parsed Hijri date:', this.state.hijriDate);
+
+                        this.state.lastHijriFetch = today;
+                        this.setCache(cacheKey, this.state.hijriDate);
+                        this.updateHijriDate();
+                        console.log('Hijri date fetched successfully:', this.state.hijriDate);
+                    } else {
+                        console.error('Invalid Hijri API response structure:', data);
+                        throw new Error('Invalid Hijri API response');
+                    }
+                } catch (error) {
+                    console.error('Error fetching Hijri date:', error);
+
+                    // Don't show error message if we have fallback data
+                    if (!this.state.hijriDate) {
+                        this.dom.hijriDate.textContent = '🌙 Failed to load Hijri date';
+                    }
+
+                    // Reset the fetch date so we can try again later
+                    this.state.lastHijriFetch = null;
+                }
+            }
+
             toggleClockType() {
                 this.state.clockType = this.state.clockType === 'digital' ? 'analog' : 'digital';
                 localStorage.setItem('clockType', this.state.clockType);
@@ -531,6 +633,11 @@
                     day: 'numeric'
                 });
 
+                // Update Hijri date if we have data
+                if (this.state.hijriDate) {
+                    this.updateHijriDate();
+                }
+
                 // Update analog display if visible
                 if (this.state.clockType === 'analog') {
                     this.drawAnalogClock();
@@ -547,6 +654,12 @@
                     this.fetchPrayerTimes();
                 }
 
+                // Also refresh Hijri date on new day
+                if (this.state.lastHijriFetch && this.state.lastHijriFetch !== today) {
+                    console.log('New day detected, refreshing Hijri date...');
+                    this.fetchHijriDate();
+                }
+
                 // Periodic retry if we don't have prayer times
                 if (!this.state.prayerTimes && this.state.retryCount < this.config.maxRetries) {
                     const now = Date.now();
@@ -556,72 +669,81 @@
                         this.fetchPrayerTimes();
                     }
                 }
+
+                // Periodic retry for Hijri date if we don't have it
+                if (!this.state.hijriDate) {
+                    const now = Date.now();
+                    const lastAttempt = this.state.lastHijriAttempt || 0;
+                    // Retry every 5 minutes if we have no Hijri data
+                    if ((now - lastAttempt) > (5 * 60 * 1000)) {
+                        console.log('No Hijri date available, attempting to fetch...');
+                        this.state.lastHijriAttempt = now;
+                        this.fetchHijriDate();
+                    }
+                }
             }            drawAnalogClock() {
                 if (!this.ctx) return;
 
                 const canvas = this.dom.canvas;
                 const centerX = canvas.width / 2;
                 const centerY = canvas.height / 2;
-                const radius = Math.min(centerX, centerY) - 80; // Increased margin for elements
+                const radius = Math.min(centerX, centerY - 25) - 50; // Adjusted for taller canvas
 
                 // Clear canvas
                 this.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Calculate square border dimensions
-                const squareSize = (radius + 70) * 2;
-                const squareX = centerX - squareSize / 2;
-                const squareY = centerY - squareSize / 2;
+                // Calculate square border dimensions - make it more rectangular
+                const squareWidth = (radius + 40) * 2;
+                const squareHeight = canvas.height - 20; // Use most of the canvas height
+                const squareX = centerX - squareWidth / 2;
+                const squareY = 10; // Small margin from top
 
                 // Draw outer square border with Bismillah
-                this.drawSquareBorder(centerX, centerY, radius);
+                this.drawSquareBorder(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
 
                 // Draw clock face
                 this.drawClockFace(centerX, centerY, radius);
                 this.drawPrayerMarkers(centerX, centerY, radius);
-                this.drawClockHands(centerX, centerY, radius, squareX, squareY, squareSize);
+                this.drawClockHands(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
                 this.drawCenterCircle(centerX, centerY);
             }
 
-            drawSquareBorder(centerX, centerY, radius) {
-                const squareSize = (radius + 70) * 2; // Size of the square border
-                const squareX = centerX - squareSize / 2;
-                const squareY = centerY - squareSize / 2;
-
+            drawSquareBorder(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight) {
                 // Draw outer square border with Arabian theme colors
                 this.ctx.save();
 
                 // Outer decorative border with Arabian gold gradient
-                const outerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
+                const outerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareWidth, squareY + squareHeight);
                 outerGradient.addColorStop(0, '#daa520');
                 outerGradient.addColorStop(0.3, '#cd853f');
                 outerGradient.addColorStop(0.7, '#8b4513');
                 outerGradient.addColorStop(1, '#2d5016');
 
                 this.ctx.fillStyle = outerGradient;
-                this.ctx.fillRect(squareX - 8, squareY - 8, squareSize + 16, squareSize + 16);
+                this.ctx.fillRect(squareX - 6, squareY - 6, squareWidth + 12, squareHeight + 12);
 
                 // Inner square with warm Arabian colors
-                const innerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
+                const innerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareWidth, squareY + squareHeight);
                 innerGradient.addColorStop(0, 'rgba(255, 248, 220, 0.2)');
                 innerGradient.addColorStop(0.5, 'rgba(245, 222, 179, 0.15)');
                 innerGradient.addColorStop(1, 'rgba(218, 165, 32, 0.1)');
 
                 this.ctx.fillStyle = innerGradient;
-                this.ctx.fillRect(squareX, squareY, squareSize, squareSize);
+                this.ctx.fillRect(squareX, squareY, squareWidth, squareHeight);
 
                 // Border lines with Arabian gold
                 this.ctx.strokeStyle = '#8b4513';
-                this.ctx.lineWidth = 4;
-                this.ctx.strokeRect(squareX, squareY, squareSize, squareSize);
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(squareX, squareY, squareWidth, squareHeight);
 
                 // Draw Bismillah on the top border
-                this.drawBismillahOnBorder(centerX, squareY, squareSize);
+                this.drawBismillahOnBorder(centerX, squareY, squareWidth);
 
                 this.ctx.restore();
-            }            drawBismillahOnBorder(centerX, squareY, squareSize) {
+            }            drawBismillahOnBorder(centerX, squareY, squareWidth) {
                 // Background for Bismillah on top border - positioned inside the border
                 const bismillahY = squareY + 10; // Move inside the border
-                const bismillahWidth = squareSize * 0.7;
+                const bismillahWidth = squareWidth * 0.7;
                 const bismillahHeight = 30;
 
                 this.ctx.fillStyle = 'rgba(255, 248, 220, 0.98)';
@@ -711,7 +833,7 @@
                 }
 
                 // Add Islamic geometric pattern in center
-                this.drawIslamicGeometry(centerX, centerY, 40);
+                this.drawIslamicGeometry(centerX, centerY, 35);
             }
 
             drawIslamicGeometry(centerX, centerY, size) {
@@ -759,7 +881,7 @@
             drawPrayerMarkers(centerX, centerY, radius) {
                 this.prayerPositions.forEach((prayer, index) => {
                     const angle = (prayer.degree - 90) * Math.PI / 180;
-                    const markerRadius = radius - 60; // Moved prayer markers closer to center
+                    const markerRadius = radius - 50; // Adjusted for larger canvas
                     const x = centerX + Math.cos(angle) * markerRadius;
                     const y = centerY + Math.sin(angle) * markerRadius;
 
@@ -772,12 +894,12 @@
                     this.ctx.shadowOffsetX = 0;
                     this.ctx.shadowOffsetY = 0;
 
-                    // Main prayer marker circle (made smaller)
+                    // Main prayer marker circle (scaled up)
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                    this.ctx.arc(x, y, 10, 0, 2 * Math.PI);
 
                     // Gradient for prayer marker
-                    const markerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, 12);
+                    const markerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, 10);
                     markerGradient.addColorStop(0, prayer.color);
                     markerGradient.addColorStop(0.7, prayer.color);
                     markerGradient.addColorStop(1, this.darkenColor(prayer.color, 20));
@@ -792,19 +914,19 @@
 
                     // Inner highlight
                     this.ctx.beginPath();
-                    this.ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                    this.ctx.arc(x, y, 5, 0, 2 * Math.PI);
                     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
                     this.ctx.fill();
 
                     this.ctx.restore();
 
-                    // Prayer time with elegant display - positioned where English name was
+                    // Prayer time with elegant display - positioned outside markers
                     if (this.state.prayerTimes && this.state.prayerTimes[prayer.name]) {
-                        const timeRadius = radius - 10;
+                        const timeRadius = radius - 15;
                         const timeX = centerX + Math.cos(angle) * timeRadius;
                         const timeY = centerY + Math.sin(angle) * timeRadius;
 
-                        // Time background with Arabian theme
+                        // Time background with Arabian theme (scaled up)
                         this.ctx.fillStyle = 'rgba(139, 69, 19, 0.95)';
                         this.ctx.fillRect(timeX - 18, timeY - 6, 36, 12);
                         this.ctx.strokeStyle = '#daa520';
@@ -818,13 +940,15 @@
                         this.ctx.fillText(this.state.prayerTimes[prayer.name], timeX, timeY);
                     }
 
-                    // Arabic name with elegant styling - moved to inside with more space
-                    const arabicRadius = radius - 110;
+                    // Arabic name with elegant styling - positioned inside with better spacing
+                    const arabicRadius = radius - 85;
                     const arabicX = centerX + Math.cos(angle) * arabicRadius;
                     const arabicY = centerY + Math.sin(angle) * arabicRadius;
 
                     this.ctx.fillStyle = prayer.color;
                     this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
                     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                     this.ctx.lineWidth = 1;
                     this.ctx.strokeText(prayer.nameAr, arabicX, arabicY);
@@ -843,7 +967,7 @@
                     (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
             }
 
-            drawClockHands(centerX, centerY, radius, squareX, squareY, squareSize) {
+            drawClockHands(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight) {
                 const prayerProgress = this.getPrayerProgress();
 
                 // Only draw the main prayer progress hand if we have prayer times
@@ -901,15 +1025,15 @@
                     this.ctx.restore();
 
                     // Prayer progress information
-                    this.drawProgressInfo(prayerProgress, squareX, squareY, squareSize);
+                    this.drawProgressInfo(prayerProgress, squareX, squareY, squareWidth, squareHeight);
                 }
                 // If no prayer times available, don't show any loading message
-            }            drawProgressInfo(prayerProgress, squareX, squareY, squareSize) {
+            }            drawProgressInfo(prayerProgress, squareX, squareY, squareWidth, squareHeight) {
                 // Position in bottom left corner of the square border
                 const progressWidth = 140;
-                const progressHeight = 55;
-                const progressX = squareX + 15; // 15px margin from left edge
-                const progressY = squareY + squareSize - progressHeight - 15; // 15px margin from bottom edge
+                const progressHeight = 50;
+                const progressX = squareX + 12; // 12px margin from left edge
+                const progressY = squareY + squareHeight - progressHeight - 12; // 12px margin from bottom edge
 
                 // Background for progress info with Arabian theme
                 this.ctx.fillStyle = 'rgba(255, 248, 220, 0.98)';
@@ -918,22 +1042,22 @@
                 this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
                 this.ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
 
-                // Current prayer name with Arabian theme
+                // Next prayer name with Arabian theme
                 this.ctx.fillStyle = '#8b4513';
                 this.ctx.font = 'bold 12px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(`Current: ${prayerProgress.currentPrayer}`, progressX + progressWidth/2, progressY + 15);
+                this.ctx.fillText(`Next: ${prayerProgress.nextPrayer}`, progressX + progressWidth/2, progressY + 13);
 
-                // Time to next prayer
+                // Time remaining to next prayer
                 this.ctx.fillStyle = '#cd853f';
                 this.ctx.font = '11px Arial';
-                this.ctx.fillText(`${prayerProgress.timeRemaining} to ${prayerProgress.nextPrayer}`, progressX + progressWidth/2, progressY + 30);
+                this.ctx.fillText(`${prayerProgress.timeRemaining} remaining`, progressX + progressWidth/2, progressY + 27);
 
                 // Progress percentage with Arabian theme
                 this.ctx.fillStyle = '#daa520';
                 this.ctx.font = 'bold 10px Arial';
-                this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, progressX + progressWidth/2, progressY + 45);
+                this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, progressX + progressWidth/2, progressY + 40);
             }
 
 
@@ -952,21 +1076,21 @@
             }
 
             drawCenterCircle(centerX, centerY) {
-                // Enhanced center circle with Arabian theme colors
+                // Enhanced center circle with Arabian theme colors (scaled up)
                 this.ctx.save();
 
                 // Outer ring with glow using Arabian theme
                 this.ctx.shadowColor = 'rgba(218, 165, 32, 0.7)';
                 this.ctx.shadowBlur = 25;
                 this.ctx.beginPath();
-                this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+                this.ctx.arc(centerX, centerY, 18, 0, 2 * Math.PI);
                 this.ctx.fillStyle = '#8b4513';
                 this.ctx.fill();
 
                 // Middle ring with Arabian theme
                 this.ctx.shadowBlur = 0;
                 this.ctx.beginPath();
-                this.ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+                this.ctx.arc(centerX, centerY, 14, 0, 2 * Math.PI);
                 this.ctx.fillStyle = '#daa520';
                 this.ctx.fill();
                 this.ctx.strokeStyle = '#8b4513';
@@ -1077,6 +1201,44 @@
 
             updateLocationDisplay(locationName) {
                 this.dom.locationInfo.textContent = `📍 ${locationName}`;
+            }            updateHijriDate() {
+                console.log('Updating Hijri date display with:', this.state.hijriDate);
+                console.log('DOM element exists:', !!this.dom.hijriDate);
+
+                if (!this.dom.hijriDate) {
+                    console.error('Hijri date DOM element not found!');
+                    return;
+                }
+
+                if (this.state.hijriDate &&
+                    this.state.hijriDate.day &&
+                    this.state.hijriDate.month &&
+                    this.state.hijriDate.year) {
+                    const hijriText = `🌙 ${this.state.hijriDate.day} ${this.state.hijriDate.month} ${this.state.hijriDate.year} AH`;
+                    this.dom.hijriDate.textContent = hijriText;
+                    console.log('Hijri date displayed:', hijriText);
+                } else {
+                    console.log('Hijri date incomplete or missing, not updating display');
+                }
+                // Only show Hijri date from API/cache - no fallback calculation
+            }
+
+            getAnyHijriCache() {
+                try {
+                    const keys = Object.keys(localStorage);
+                    const hijriKeys = keys.filter(key => key.startsWith('hijri-date-'));
+
+                    for (const key of hijriKeys) {
+                        const cached = this.getFromCache(key);
+                        if (cached && cached.day && cached.month && cached.year) {
+                            console.log('Using fallback Hijri cache from:', key);
+                            return cached;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error searching for Hijri cache:', error);
+                }
+                return null;
             }
 
             // Utility functions
@@ -1095,16 +1257,16 @@
                         const { data, timestamp } = JSON.parse(cached);
                         // Check if cache is still valid (within 24 hours)
                         if (Date.now() - timestamp < this.config.cacheTimeout) {
-                            console.log('Using cached prayer times');
+                            console.log('Using cached data for:', key);
                             return data;
                         } else {
                             // Keep expired cache for fallback, but mark it as expired
-                            console.log('Cache expired but keeping for fallback');
+                            console.log('Cache expired but keeping for fallback:', key);
                             // Don't remove expired cache immediately - keep as fallback
                         }
                     }
                 } catch (error) {
-                    console.error('Cache read error:', error);
+                    console.error('Cache read error for', key, ':', error);
                     // Don't remove cache on read error - might be temporary
                 }
 
@@ -1114,12 +1276,12 @@
                     if (cached) {
                         const { data } = JSON.parse(cached);
                         if (data && Object.keys(data).length > 0) {
-                            console.log('Using expired cache as fallback');
+                            console.log('Using expired cache as fallback for:', key);
                             return data;
                         }
                     }
                 } catch (error) {
-                    console.error('Fallback cache read error:', error);
+                    console.error('Fallback cache read error for', key, ':', error);
                 }
 
                 return null;
