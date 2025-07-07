@@ -232,16 +232,21 @@
         }
 
         .hijri-date {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: #4a6b4a;
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #2c5530;
             text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            font-weight: 500;
+            font-weight: 600;
             position: relative;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(139, 69, 19, 0.1);
-            border: 1px solid rgba(139, 69, 19, 0.3);
+            padding: 10px 15px;
+            border-radius: 12px;
+            background: rgba(218, 165, 32, 0.1);
+            border: 2px solid rgba(218, 165, 32, 0.3);
+            direction: rtl;
+            text-align: center;
+            font-family: 'Arial', 'Tahoma', sans-serif;
+            line-height: 1.4;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         @media (max-width: 768px) {
@@ -249,7 +254,33 @@
             .digital-clock { font-size: 2.2rem; }
             .clock-canvas { width: 350px; height: 385px; }
             .clock-container { max-width: 380px; }
-            .hijri-date { font-size: 0.8rem; }
+            .hijri-date {
+                font-size: 0.9rem;
+                padding: 8px 12px;
+                margin-top: 10px;
+            }
+        }
+
+        /* RTL styles */
+        body[dir="rtl"] {
+            font-family: Arial, Tahoma, sans-serif;
+        }
+
+        body[dir="rtl"] .clock-container {
+            direction: rtl;
+        }
+
+        body[dir="rtl"] .toggle-btn {
+            font-family: Arial, Tahoma, sans-serif;
+        }
+
+        body[dir="rtl"] .digital-clock,
+        body[dir="rtl"] .analog-clock {
+            direction: rtl;
+        }
+
+        body[dir="rtl"] .clock-title {
+            font-family: Arial, Tahoma, sans-serif;
         }
     </style>
 </head>
@@ -263,16 +294,17 @@
 
         <div id="digital-display" class="digital-clock">
             <div id="time-display">00:00:00</div>
-            <div id="date-display" class="date-display">Loading...</div>
+            <div id="date-display" class="date-display"></div>
         </div>
 
         <div id="analog-display" class="analog-clock" style="display: none;">
             <canvas id="clock-canvas" class="clock-canvas" width="500" height="550"></canvas>
-            <div id="location-info" class="location-info">📍 Getting location...</div>
-            <div id="hijri-date" class="hijri-date">🌙 Loading...</div>
+            <div id="location-info" class="location-info"></div>
+            <div id="hijri-date" class="hijri-date"></div>
         </div>
 
         <button id="toggle-btn" class="toggle-btn">Switch to Prayer Clock</button>
+        <button id="language-btn" class="toggle-btn" style="margin-left: 10px;">العربية</button>
     </div>
 
     <script>
@@ -292,6 +324,7 @@
                 // State
                 this.state = {
                     clockType: localStorage.getItem('clockType') || 'digital',
+                    language: localStorage.getItem('language') || 'en', // 'en' or 'ar'
                     prayerTimes: null,
                     location: null,
                     lastUpdate: null,
@@ -312,6 +345,7 @@
                     timeDisplay: document.getElementById('time-display'),
                     dateDisplay: document.getElementById('date-display'),
                     toggleBtn: document.getElementById('toggle-btn'),
+                    languageBtn: document.getElementById('language-btn'),
                     canvas: document.getElementById('clock-canvas'),
                     locationInfo: document.getElementById('location-info'),
                     hijriDate: document.getElementById('hijri-date')
@@ -331,27 +365,119 @@
                     { name: 'Sunrise', nameAr: 'الشروق', degree: 270, color: '#ff9800' }
                 ];
 
+                // Hijri month names (1-12)
+                this.hijriMonths = {
+                    en: ['Muḥarram', 'Ṣafar', 'Rabīʿ al-awwal', 'Rabīʿ al-thānī', 'Jumādā al-awwal', 'Jumādā al-thānī', 'Rajab', 'Shaʿbān', 'Ramaḍān', 'Shawwāl', 'Dhū al-Qaʿdah', 'Dhū al-Ḥijjah'],
+                    ar: ['مُحَرَّم', 'صَفَر', 'رَبِيع الأَوَّل', 'رَبِيع الثَّانِي', 'جُمَادَىٰ الأُولَىٰ', 'جُمَادَىٰ الآخِرَة', 'رَجَب', 'شَعْبَان', 'رَمَضَان', 'شَوَّال', 'ذُو القَعْدَة', 'ذُو الحِجَّة']
+                };
+
+                // Hijri weekday names (Sunday = 0, Monday = 1, etc.)
+                this.hijriWeekdays = {
+                    en: ['Al Ahad', 'Al Athnayn', 'Al Thulatha', 'Al Arbiaa', 'Al Khamees', 'Al Jumuaa', 'Al Sabt'],
+                    ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+                };
+
+                // Translation system
+                this.translations = {
+                    en: {
+                        title: '🕌 Islamic Prayer Clock',
+                        switchToDigital: 'Switch to Digital',
+                        switchToPrayerClock: 'Switch to Prayer Clock',
+                        languageButton: 'العربية',
+                        loading: 'Loading...',
+                        gettingLocation: '📍 Getting location...',
+                        hijriLoading: '🌙 Loading...',
+                        hijriError: '🌙 Failed to load Hijri date',
+                        locationError: '📍 Location unavailable',
+                        prayerTimesError: 'Prayer times unavailable',
+                        nextPrayer: 'Next',
+                        remaining: 'remaining',
+                        complete: 'Complete',
+                        defaultLocation: 'Mecca, Saudi Arabia',
+                        currentTime: 'Current Time',
+                        currentDate: 'Current Date',
+                        prayerTimes: 'Prayer Times',
+                        // Weekdays for digital display
+                        weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+                        // Months for digital display
+                        months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        // Prayer names (for display)
+                        prayers: {
+                            Fajr: 'Fajr',
+                            Sunrise: 'Sunrise',
+                            Dhuhr: 'Dhuhr',
+                            Asr: 'Asr',
+                            Maghrib: 'Maghrib',
+                            Isha: 'Isha',
+                            Midnight: 'Midnight'
+                        }
+                    },
+                    ar: {
+                        title: '🕌 ساعة الصلاة الإسلامية',
+                        switchToDigital: 'تحويل إلى الرقمي',
+                        switchToPrayerClock: 'تحويل إلى ساعة الصلاة',
+                        languageButton: 'English',
+                        loading: 'جاري التحميل...',
+                        gettingLocation: '📍 جاري تحديد الموقع...',
+                        hijriLoading: '🌙 جاري التحميل...',
+                        hijriError: '🌙 فشل في تحميل التاريخ الهجري',
+                        locationError: '📍 الموقع غير متاح',
+                        prayerTimesError: 'أوقات الصلاة غير متاحة',
+                        nextPrayer: 'التالي',
+                        remaining: 'متبقي',
+                        complete: 'مكتمل',
+                        defaultLocation: 'مكة المكرمة، السعودية',
+                        currentTime: 'الوقت الحالي',
+                        currentDate: 'التاريخ الحالي',
+                        prayerTimes: 'أوقات الصلاة',
+                        // Weekdays for digital display
+                        weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+                        // Months for digital display
+                        months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+                        // Prayer names (for display)
+                        prayers: {
+                            Fajr: 'الفجر',
+                            Sunrise: 'الشروق',
+                            Dhuhr: 'الظهر',
+                            Asr: 'العصر',
+                            Maghrib: 'المغرب',
+                            Isha: 'العشاء',
+                            Midnight: 'منتصف الليل'
+                        }
+                    }
+                };
+
                 this.init();
+            }
+
+            // Get translated text
+            getText(key) {
+                return this.translations[this.state.language][key] || this.translations.en[key] || key;
             }            async init() {
                 try {
+                    console.log('Starting initialization...');
                     this.setupEventListeners();
+                    this.updateLanguageDisplay(); // Set up translations first
                     this.updateClockDisplay();
                     await this.initializeLocation();
                     await this.fetchPrayerTimes();
+                    console.log('Fetching Hijri date during initialization...');
                     await this.fetchHijriDate();
                     this.state.isInitialized = true;
                     this.startClock();
+                    console.log('Initialization complete');
                 } catch (error) {
                     console.error('Initialization error:', error);
                     this.state.isInitialized = true;
                     this.startClock(); // Start clock without prayer times - will only show current time
                     // Try to fetch Hijri date even if other initialization fails
+                    console.log('Attempting Hijri date fetch after initialization error...');
                     this.fetchHijriDate();
                 }
-            }
-
-            setupEventListeners() {
+            }            setupEventListeners() {
                 this.dom.toggleBtn.addEventListener('click', () => this.toggleClockType());
+
+                this.dom.languageBtn.addEventListener('click', () => this.toggleLanguage());
 
                 // Handle visibility changes to optimize performance
                 document.addEventListener('visibilitychange', () => {
@@ -384,7 +510,7 @@
                 } catch (error) {
                     console.log('Using default location (Mecca)');
                     this.state.location = this.config.defaultLocation;
-                    this.updateLocationDisplay('Mecca, Saudi Arabia');
+                    this.updateLocationDisplay(this.getText('defaultLocation'));
                 }
             }
 
@@ -511,21 +637,8 @@
 
                 console.log('Fetching Hijri date for:', today);
 
-                // Check cache first
-                const cached = this.getFromCache(cacheKey);
-                if (cached) {
-                    console.log('Found cached Hijri date:', cached);
-                    this.state.hijriDate = cached;
-                    this.state.lastHijriFetch = today;
-                    this.updateHijriDate();
-                    return;
-                }
-
-                // Skip if already fetched today
-                if (this.state.lastHijriFetch === today && this.state.hijriDate) {
-                    console.log('Already fetched Hijri date today');
-                    return;
-                }
+                // Skip cache for now to ensure fresh data
+                console.log('Fetching Hijri date...');
 
                 // Check for any existing Hijri cache as fallback
                 if (!this.state.hijriDate) {
@@ -551,20 +664,30 @@
 
                     const data = await response.json();
 
-                    console.log('Hijri API response:', data);
-
-                    if (data.code === 200 && data.data && data.data.hijri) {
+                    console.log('Hijri API response:', data);                    if (data.code === 200 && data.data && data.data.hijri) {
                         const hijriData = data.data.hijri;
-                        console.log('Hijri data structure:', hijriData);
+
+                        // Get month index (1-12) and convert to array index (0-11)
+                        const monthIndex = parseInt(hijriData.month.number) - 1;
+
+                        // Get weekday from current date
+                        const gregorianDate = new Date();
+                        const weekdayIndex = gregorianDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+                        // Use our arrays to get the correct names
+                        const monthArabic = this.hijriMonths.ar[monthIndex];
+                        const monthEnglish = this.hijriMonths.en[monthIndex];
+                        const weekdayArabic = this.hijriWeekdays.ar[weekdayIndex];
+                        const weekdayEnglish = this.hijriWeekdays.en[weekdayIndex];
 
                         this.state.hijriDate = {
                             day: hijriData.day,
-                            month: hijriData.month?.en || hijriData.month,
+                            month: monthEnglish,
+                            monthAr: monthArabic,
                             year: hijriData.year,
-                            weekday: hijriData.weekday?.en || hijriData.weekday
+                            weekday: weekdayEnglish,
+                            weekdayAr: weekdayArabic
                         };
-
-                        console.log('Parsed Hijri date:', this.state.hijriDate);
 
                         this.state.lastHijriFetch = today;
                         this.setCache(cacheKey, this.state.hijriDate);
@@ -579,7 +702,7 @@
 
                     // Don't show error message if we have fallback data
                     if (!this.state.hijriDate) {
-                        this.dom.hijriDate.textContent = '🌙 Failed to load Hijri date';
+                        this.dom.hijriDate.textContent = this.getText('hijriError');
                     }
 
                     // Reset the fetch date so we can try again later
@@ -593,12 +716,65 @@
                 this.updateClockDisplay();
             }
 
+            toggleLanguage() {
+                this.state.language = this.state.language === 'en' ? 'ar' : 'en';
+                localStorage.setItem('language', this.state.language);
+                this.updateLanguageDisplay();
+                // Update Hijri date display with new language
+                if (this.state.hijriDate) {
+                    this.updateHijriDate();
+                }
+            }            updateLanguageDisplay() {
+                // Update language button text
+                this.dom.languageBtn.textContent = this.getText('languageButton');
+
+                // Update page title
+                document.title = this.getText('title');
+
+                // Update HTML lang attribute
+                document.documentElement.lang = this.state.language;
+
+                // Update main title
+                const clockTitle = document.querySelector('.clock-title');
+                if (clockTitle) {
+                    clockTitle.textContent = this.getText('title');
+                }
+
+                // Update toggle button text
+                const isAnalog = this.state.clockType === 'analog';
+                this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
+
+                // Set initial loading text if empty or update if needed
+                if (!this.dom.locationInfo.textContent || this.dom.locationInfo.textContent.includes('Getting location') || this.dom.locationInfo.textContent.includes('جاري تحديد الموقع')) {
+                    this.dom.locationInfo.textContent = this.getText('gettingLocation');
+                }
+
+                if (!this.dom.hijriDate.textContent || this.dom.hijriDate.textContent.includes('Loading') || this.dom.hijriDate.textContent.includes('جاري التحميل')) {
+                    this.dom.hijriDate.textContent = this.getText('hijriLoading');
+                }
+
+                if (this.dom.hijriDate.textContent.includes('Failed to load') || this.dom.hijriDate.textContent.includes('فشل في تحميل')) {
+                    this.dom.hijriDate.textContent = this.getText('hijriError');
+                }
+
+                // Update button styles and text direction for RTL/LTR
+                if (this.state.language === 'ar') {
+                    document.body.setAttribute('dir', 'rtl');
+                    document.body.style.textAlign = 'right';
+                    this.dom.languageBtn.style.fontFamily = 'Arial, Tahoma, sans-serif';
+                } else {
+                    document.body.setAttribute('dir', 'ltr');
+                    document.body.style.textAlign = 'left';
+                    this.dom.languageBtn.style.fontFamily = 'Arial, sans-serif';
+                }
+            }
+
             updateClockDisplay() {
                 const isAnalog = this.state.clockType === 'analog';
 
                 this.dom.digitalDisplay.style.display = isAnalog ? 'none' : 'block';
                 this.dom.analogDisplay.style.display = isAnalog ? 'block' : 'none';
-                this.dom.toggleBtn.textContent = isAnalog ? 'Switch to Digital' : 'Switch to Prayer Clock';
+                this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
 
                 if (isAnalog) {
                     this.drawAnalogClock();
@@ -625,13 +801,10 @@
                 this.checkForNewDay();
 
                 // Update digital display
-                this.dom.timeDisplay.textContent = now.toLocaleTimeString();
-                this.dom.dateDisplay.textContent = now.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
+                const timeString = this.formatTime(now);
+
+                this.dom.timeDisplay.textContent = timeString;
+                this.dom.dateDisplay.textContent = this.formatDate(now);
 
                 // Update Hijri date if we have data
                 if (this.state.hijriDate) {
@@ -641,6 +814,46 @@
                 // Update analog display if visible
                 if (this.state.clockType === 'analog') {
                     this.drawAnalogClock();
+                }
+            }
+
+            formatTime(date) {
+                const hours = date.getHours();
+                const minutes = date.getMinutes();
+                const seconds = date.getSeconds();
+
+                // Convert to 12-hour format
+                const hours12 = hours % 12 || 12;
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+
+                // Format time string with consistent padding
+                const timeString = `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                if (this.state.language === 'ar') {
+                    // Arabic format with Arabic numerals and Arabic AM/PM
+                    const arabicAmPm = ampm === 'AM' ? 'ص' : 'م';
+                    return `${this.toArabicNumerals(timeString)} ${arabicAmPm}`;
+                } else {
+                    // English format
+                    return `${timeString} ${ampm}`;
+                }
+            }
+
+            formatDate(date) {
+                const weekdays = this.translations[this.state.language].weekdays;
+                const months = this.translations[this.state.language].months;
+
+                const weekday = weekdays[date.getDay()];
+                const month = months[date.getMonth()];
+                const day = date.getDate();
+                const year = date.getFullYear();
+
+                if (this.state.language === 'ar') {
+                    // Arabic format: اليوم، اليوم الشهر السنة
+                    return `${weekday}، ${this.toArabicNumerals(day)} ${month} ${this.toArabicNumerals(year)}`;
+                } else {
+                    // English format: Weekday, Month Day, Year
+                    return `${weekday}, ${month} ${day}, ${year}`;
                 }
             }
 
@@ -764,7 +977,7 @@
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ', centerX, bismillahY + 10);
 
-                // English translation
+                // English translation (always show English regardless of language setting)
                 this.ctx.shadowBlur = 0;
                 this.ctx.fillStyle = '#cd853f';
                 this.ctx.font = 'italic 9px Arial';
@@ -937,7 +1150,9 @@
                         this.ctx.font = 'bold 9px Arial';
                         this.ctx.textAlign = 'center';
                         this.ctx.textBaseline = 'middle';
-                        this.ctx.fillText(this.state.prayerTimes[prayer.name], timeX, timeY);
+                        const prayerTimeText = this.state.prayerTimes[prayer.name];
+                        const displayTime = this.state.language === 'ar' ? this.toArabicNumerals(prayerTimeText) : prayerTimeText;
+                        this.ctx.fillText(displayTime, timeX, timeY);
                     }
 
                     // Arabic name with elegant styling - positioned inside with better spacing
@@ -951,8 +1166,9 @@
                     this.ctx.textBaseline = 'middle';
                     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
                     this.ctx.lineWidth = 1;
-                    this.ctx.strokeText(prayer.nameAr, arabicX, arabicY);
-                    this.ctx.fillText(prayer.nameAr, arabicX, arabicY);
+                    const prayerName = this.state.language === 'ar' ? prayer.nameAr : (this.getText('prayers')[prayer.name] || prayer.name);
+                    this.ctx.strokeText(prayerName, arabicX, arabicY);
+                    this.ctx.fillText(prayerName, arabicX, arabicY);
                 });
             }
 
@@ -1047,17 +1263,22 @@
                 this.ctx.font = 'bold 12px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(`Next: ${prayerProgress.nextPrayer}`, progressX + progressWidth/2, progressY + 13);
+                const nextPrayerName = this.getText('prayers')[prayerProgress.nextPrayer] || prayerProgress.nextPrayer;
+                this.ctx.fillText(`${this.getText('nextPrayer')}: ${nextPrayerName}`, progressX + progressWidth/2, progressY + 13);
 
                 // Time remaining to next prayer
                 this.ctx.fillStyle = '#cd853f';
                 this.ctx.font = '11px Arial';
-                this.ctx.fillText(`${prayerProgress.timeRemaining} remaining`, progressX + progressWidth/2, progressY + 27);
+                let timeRemainingText = `${prayerProgress.timeRemaining} ${this.getText('remaining')}`;
+                // Note: prayerProgress.timeRemaining is already formatted with Arabic numerals from formatTimeRemaining
+                this.ctx.fillText(timeRemainingText, progressX + progressWidth/2, progressY + 27);
 
                 // Progress percentage with Arabian theme
                 this.ctx.fillStyle = '#daa520';
                 this.ctx.font = 'bold 10px Arial';
-                this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, progressX + progressWidth/2, progressY + 40);
+                const progressText = `${prayerProgress.progressPercentage}% ${this.getText('complete')}`;
+                const displayProgressText = this.state.language === 'ar' ? this.toArabicNumerals(progressText) : progressText;
+                this.ctx.fillText(displayProgressText, progressX + progressWidth/2, progressY + 40);
             }
 
 
@@ -1196,15 +1417,39 @@
             formatTimeRemaining(minutes) {
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
-                return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+
+                let timeString;
+                if (this.state.language === 'ar') {
+                    // Use Arabic abbreviations (first letter of each word)
+                    const arabicHours = this.toArabicNumerals(hours);
+                    const arabicMins = this.toArabicNumerals(mins);
+
+                    if (hours > 0) {
+                        // س = first letter of ساعة (hour), د = first letter of دقيقة (minute)
+                        timeString = `${arabicHours}س ${arabicMins}د`;
+                    } else {
+                        // د = first letter of دقيقة (minute)
+                        timeString = `${arabicMins}د`;
+                    }
+                } else {
+                    // English format with abbreviations
+                    timeString = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+                }
+
+                return timeString;
             }
 
             updateLocationDisplay(locationName) {
                 this.dom.locationInfo.textContent = `📍 ${locationName}`;
-            }            updateHijriDate() {
-                console.log('Updating Hijri date display with:', this.state.hijriDate);
-                console.log('DOM element exists:', !!this.dom.hijriDate);
+            }
 
+            // Convert Western numerals to Arabic-Indic numerals
+            toArabicNumerals(num) {
+                const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+                return num.toString().replace(/\d/g, digit => arabicNumerals[parseInt(digit)]);
+            }
+
+            updateHijriDate() {
                 if (!this.dom.hijriDate) {
                     console.error('Hijri date DOM element not found!');
                     return;
@@ -1212,9 +1457,22 @@
 
                 if (this.state.hijriDate &&
                     this.state.hijriDate.day &&
-                    this.state.hijriDate.month &&
+                    (this.state.hijriDate.monthAr || this.state.hijriDate.month) &&
                     this.state.hijriDate.year) {
-                    const hijriText = `🌙 ${this.state.hijriDate.day} ${this.state.hijriDate.month} ${this.state.hijriDate.year} AH`;
+
+                    // Use Arabic if available, otherwise fallback to English
+                    const monthName = this.state.hijriDate.monthAr || this.state.hijriDate.month;
+                    const weekdayName = this.state.hijriDate.weekdayAr || this.state.hijriDate.weekday || '';
+
+                    // Convert numbers to Arabic numerals
+                    const arabicDay = this.toArabicNumerals(this.state.hijriDate.day);
+                    const arabicYear = this.toArabicNumerals(this.state.hijriDate.year);
+
+                    // Format: "الاثنين ١٢ محرم ١٤٤٧ هـ"
+                    const hijriText = weekdayName
+                        ? `🌙 ${weekdayName} ${arabicDay} ${monthName} ${arabicYear} هـ`
+                        : `🌙 ${arabicDay} ${monthName} ${arabicYear} هـ`;
+
                     this.dom.hijriDate.textContent = hijriText;
                     console.log('Hijri date displayed:', hijriText);
                 } else {
@@ -1230,7 +1488,7 @@
 
                     for (const key of hijriKeys) {
                         const cached = this.getFromCache(key);
-                        if (cached && cached.day && cached.month && cached.year) {
+                        if (cached && cached.day && (cached.monthAr || cached.month) && cached.year) {
                             console.log('Using fallback Hijri cache from:', key);
                             return cached;
                         }
