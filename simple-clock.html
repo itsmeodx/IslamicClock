@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islamic Prayer Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .clock-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .clock-title {
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .digital-clock {
+            font-family: 'Courier New', monospace;
+            font-size: 3rem;
+            color: #fff;
+            margin: 20px 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .date-display {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+        }
+
+        .analog-clock {
+            margin: 20px 0;
+            position: relative;
+            display: inline-block;
+        }
+
+        .clock-canvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: radial-gradient(circle, #fafafa 0%, #e0e0e0 100%);
+        }
+
+        .toggle-btn {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+            margin-top: 20px;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+        }
+
+        .location-info {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .prayer-info {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .clock-title { font-size: 2rem; }
+            .digital-clock { font-size: 2.5rem; }
+            .clock-canvas { width: 280px; height: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="clock-container">
+        <h1 class="clock-title">🕌 Islamic Prayer Clock</h1>
+
+        <div id="digital-display" class="digital-clock">
+            <div id="time-display">00:00:00</div>
+            <div id="date-display" class="date-display">Loading...</div>
+        </div>
+
+        <div id="analog-display" class="analog-clock" style="display: none;">
+            <canvas id="clock-canvas" class="clock-canvas" width="400" height="400"></canvas>
+            <div id="location-info" class="location-info">📍 Getting location...</div>
+            <div id="prayer-info" class="prayer-info">
+                🕌 Dhuhr (North) • Asr (NE) • Maghrib (East) • Isha (SE) • Midnight (South) • Fajr (West)
+            </div>
+        </div>
+
+        <button id="toggle-btn" class="toggle-btn">Switch to Prayer Clock</button>
+    </div>
+
+    <script>
+        class IslamicPrayerClock {
+            constructor() {
+                // Configuration
+                this.config = {
+                    apiUrl: 'https://api.aladhan.com/v1/timings',
+                    updateInterval: 1000,
+                    locationTimeout: 10000,
+                    cacheTimeout: 3600000, // 1 hour
+                    defaultLocation: { lat: 21.4225, lng: 39.8262 } // Mecca
+                };
+
+                // State
+                this.state = {
+                    clockType: localStorage.getItem('clockType') || 'digital',
+                    prayerTimes: null,
+                    location: null,
+                    lastUpdate: null,
+                    animationId: null
+                };
+
+                // DOM Elements (cached)
+                this.dom = {
+                    digitalDisplay: document.getElementById('digital-display'),
+                    analogDisplay: document.getElementById('analog-display'),
+                    timeDisplay: document.getElementById('time-display'),
+                    dateDisplay: document.getElementById('date-display'),
+                    toggleBtn: document.getElementById('toggle-btn'),
+                    canvas: document.getElementById('clock-canvas'),
+                    locationInfo: document.getElementById('location-info'),
+                    prayerInfo: document.getElementById('prayer-info')
+                };
+
+                // Canvas context (cached)
+                this.ctx = this.dom.canvas?.getContext('2d');
+
+                // Prayer positions (fixed compass positions)
+                this.prayerPositions = [
+                    { name: 'Dhuhr', nameAr: 'الظهر', degree: 0, color: '#2ecc71' },
+                    { name: 'Asr', nameAr: 'العصر', degree: 60, color: '#f39c12' },
+                    { name: 'Maghrib', nameAr: 'المغرب', degree: 90, color: '#e74c3c' },
+                    { name: 'Isha', nameAr: 'العشاء', degree: 150, color: '#9b59b6' },
+                    { name: 'Midnight', nameAr: 'منتصف الليل', degree: 180, color: '#34495e' },
+                    { name: 'Fajr', nameAr: 'الفجر', degree: 270, color: '#3498db' }
+                ];
+
+                this.init();
+            }
+
+            async init() {
+                try {
+                    this.setupEventListeners();
+                    this.updateClockDisplay();
+                    await this.initializeLocation();
+                    await this.fetchPrayerTimes();
+                    this.startClock();
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.startClock(); // Start with default times
+                }
+            }
+
+            setupEventListeners() {
+                this.dom.toggleBtn.addEventListener('click', () => this.toggleClockType());
+
+                // Handle visibility changes to optimize performance
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.stopClock();
+                    } else {
+                        this.startClock();
+                    }
+                });
+
+                // Handle window resize for responsive canvas
+                window.addEventListener('resize', this.debounce(() => {
+                    if (this.state.clockType === 'analog') {
+                        this.drawAnalogClock();
+                    }
+                }, 250));
+            }
+
+            async initializeLocation() {
+                try {
+                    const position = await this.getCurrentPosition();
+                    this.state.location = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    // Get location name
+                    const locationName = await this.getLocationName(this.state.location);
+                    this.updateLocationDisplay(locationName);
+                } catch (error) {
+                    console.log('Using default location (Mecca)');
+                    this.state.location = this.config.defaultLocation;
+                    this.updateLocationDisplay('Mecca, Saudi Arabia');
+                }
+            }
+
+            getCurrentPosition() {
+                return new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) {
+                        reject(new Error('Geolocation not supported'));
+                        return;
+                    }
+
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Location timeout'));
+                    }, this.config.locationTimeout);
+
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            clearTimeout(timeout);
+                            resolve(position);
+                        },
+                        (error) => {
+                            clearTimeout(timeout);
+                            reject(error);
+                        },
+                        { timeout: this.config.locationTimeout, enableHighAccuracy: true }
+                    );
+                });
+            }
+
+            async getLocationName(location) {
+                try {
+                    const response = await fetch(
+                        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${location.lat}&longitude=${location.lng}&localityLanguage=en`
+                    );
+                    const data = await response.json();
+                    return `${data.locality || data.city || 'Unknown'}, ${data.countryName || 'Unknown'}`;
+                } catch (error) {
+                    return 'Unknown Location';
+                }
+            }
+
+            async fetchPrayerTimes() {
+                if (!this.state.location) return;
+
+                // Check cache first
+                const cacheKey = `prayer-times-${this.state.location.lat}-${this.state.location.lng}-${new Date().toDateString()}`;
+                const cached = this.getFromCache(cacheKey);
+                if (cached) {
+                    this.state.prayerTimes = cached;
+                    return;
+                }
+
+                try {
+                    const today = new Date();
+                    const dateString = today.toISOString().split('T')[0];
+                    const url = `${this.config.apiUrl}/${dateString}?latitude=${this.state.location.lat}&longitude=${this.state.location.lng}&method=2`;
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.code === 200) {
+                        this.state.prayerTimes = data.data.timings;
+                        this.setCache(cacheKey, this.state.prayerTimes);
+                    } else {
+                        throw new Error('API response error');
+                    }
+                } catch (error) {
+                    console.error('Error fetching prayer times:', error);
+                    this.state.prayerTimes = this.getDefaultPrayerTimes();
+                }
+            }
+
+            getDefaultPrayerTimes() {
+                return {
+                    Fajr: '05:30',
+                    Dhuhr: '12:00',
+                    Asr: '15:30',
+                    Maghrib: '18:00',
+                    Isha: '19:30'
+                };
+            }
+
+            toggleClockType() {
+                this.state.clockType = this.state.clockType === 'digital' ? 'analog' : 'digital';
+                localStorage.setItem('clockType', this.state.clockType);
+                this.updateClockDisplay();
+            }
+
+            updateClockDisplay() {
+                const isAnalog = this.state.clockType === 'analog';
+
+                this.dom.digitalDisplay.style.display = isAnalog ? 'none' : 'block';
+                this.dom.analogDisplay.style.display = isAnalog ? 'block' : 'none';
+                this.dom.toggleBtn.textContent = isAnalog ? 'Switch to Digital' : 'Switch to Prayer Clock';
+
+                if (isAnalog) {
+                    this.drawAnalogClock();
+                }
+            }
+
+            startClock() {
+                this.stopClock();
+                this.updateTime();
+                this.state.animationId = setInterval(() => this.updateTime(), this.config.updateInterval);
+            }
+
+            stopClock() {
+                if (this.state.animationId) {
+                    clearInterval(this.state.animationId);
+                    this.state.animationId = null;
+                }
+            }
+
+            updateTime() {
+                const now = new Date();
+
+                // Update digital display
+                this.dom.timeDisplay.textContent = now.toLocaleTimeString();
+                this.dom.dateDisplay.textContent = now.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Update analog display if visible
+                if (this.state.clockType === 'analog') {
+                    this.drawAnalogClock();
+                }
+            }
+
+            drawAnalogClock() {
+                if (!this.ctx) return;
+
+                const canvas = this.dom.canvas;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(centerX, centerY) - 20;
+
+                // Clear canvas
+                this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw clock face
+                this.drawClockFace(centerX, centerY, radius);
+                this.drawPrayerMarkers(centerX, centerY, radius);
+                this.drawCompassLabels(centerX, centerY, radius);
+                this.drawClockHands(centerX, centerY, radius);
+                this.drawCenterCircle(centerX, centerY);
+                this.drawBismillah(centerX, centerY, radius);
+            }
+
+            drawClockFace(centerX, centerY, radius) {
+                // Outer decorative border with Islamic pattern
+                const outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
+                outerGradient.addColorStop(0, '#d4af37');
+                outerGradient.addColorStop(0.5, '#b8860b');
+                outerGradient.addColorStop(1, '#8b6914');
+
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
+                this.ctx.fillStyle = outerGradient;
+                this.ctx.fill();
+
+                // Main clock face with elegant gradient
+                const mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                mainGradient.addColorStop(0, '#ffffff');
+                mainGradient.addColorStop(0.3, '#fafafa');
+                mainGradient.addColorStop(0.7, '#f0f8f0');
+                mainGradient.addColorStop(0.9, '#e8f5e8');
+                mainGradient.addColorStop(1, '#d0e8d0');
+
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                this.ctx.fillStyle = mainGradient;
+                this.ctx.fill();
+
+                // Elegant border
+                this.ctx.strokeStyle = '#2c5530';
+                this.ctx.lineWidth = 4;
+                this.ctx.stroke();
+
+                // Inner decorative circles
+                for (let i = 1; i <= 3; i++) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(centerX, centerY, radius - (i * 12), 0, 2 * Math.PI);
+                    this.ctx.strokeStyle = `rgba(212, 175, 55, ${0.4 - i * 0.1})`;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+                }
+
+                // Subtle hour markers with elegant styling
+                this.ctx.strokeStyle = 'rgba(44, 85, 48, 0.3)';
+                this.ctx.lineWidth = 1;
+                for (let i = 0; i < 24; i++) {
+                    const angle = (i * 15) * Math.PI / 180;
+                    const isMainHour = i % 6 === 0;
+                    const startRadius = radius - (isMainHour ? 20 : 12);
+                    const endRadius = radius - 3;
+
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(
+                        centerX + Math.cos(angle) * startRadius,
+                        centerY + Math.sin(angle) * startRadius
+                    );
+                    this.ctx.lineTo(
+                        centerX + Math.cos(angle) * endRadius,
+                        centerY + Math.sin(angle) * endRadius
+                    );
+                    this.ctx.lineWidth = isMainHour ? 2 : 1;
+                    this.ctx.stroke();
+                }
+
+                // Add Islamic geometric pattern in center
+                this.drawIslamicGeometry(centerX, centerY, 40);
+            }
+
+            drawIslamicGeometry(centerX, centerY, size) {
+                // 8-pointed star (Khatam) with enhanced design
+                this.ctx.save();
+
+                // Outer star with gradient
+                const starGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
+                starGradient.addColorStop(0, 'rgba(212, 175, 55, 0.8)');
+                starGradient.addColorStop(0.7, 'rgba(212, 175, 55, 0.4)');
+                starGradient.addColorStop(1, 'rgba(212, 175, 55, 0.1)');
+
+                this.ctx.beginPath();
+                for (let i = 0; i < 16; i++) {
+                    const angle = (i * 22.5) * Math.PI / 180;
+                    const radius = i % 2 === 0 ? size * 0.8 : size * 0.4;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+
+                    if (i === 0) {
+                        this.ctx.moveTo(x, y);
+                    } else {
+                        this.ctx.lineTo(x, y);
+                    }
+                }
+                this.ctx.closePath();
+                this.ctx.fillStyle = starGradient;
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#d4af37';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+
+                // Inner ornamental circle
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, size * 0.25, 0, 2 * Math.PI);
+                this.ctx.fillStyle = '#d4af37';
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#2c5530';
+                this.ctx.lineWidth = 1;
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            }
+
+            drawPrayerMarkers(centerX, centerY, radius) {
+                this.prayerPositions.forEach((prayer, index) => {
+                    const angle = (prayer.degree - 90) * Math.PI / 180;
+                    const markerRadius = radius - 45;
+                    const x = centerX + Math.cos(angle) * markerRadius;
+                    const y = centerY + Math.sin(angle) * markerRadius;
+
+                    // Enhanced prayer marker with glow effect
+                    this.ctx.save();
+
+                    // Glow effect
+                    this.ctx.shadowColor = prayer.color;
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowOffsetX = 0;
+                    this.ctx.shadowOffsetY = 0;
+
+                    // Main prayer marker circle
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 16, 0, 2 * Math.PI);
+
+                    // Gradient for prayer marker
+                    const markerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, 16);
+                    markerGradient.addColorStop(0, prayer.color);
+                    markerGradient.addColorStop(0.7, prayer.color);
+                    markerGradient.addColorStop(1, this.darkenColor(prayer.color, 20));
+
+                    this.ctx.fillStyle = markerGradient;
+                    this.ctx.fill();
+
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.strokeStyle = '#ffffff';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.stroke();
+
+                    // Inner highlight
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 8, 0, 2 * Math.PI);
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    this.ctx.fill();
+
+                    this.ctx.restore();
+
+                    // Enhanced prayer name with better typography
+                    const labelRadius = radius - 70;
+                    const labelX = centerX + Math.cos(angle) * labelRadius;
+                    const labelY = centerY + Math.sin(angle) * labelRadius;
+
+                    // Prayer name background for better readability
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    this.ctx.fillRect(labelX - 25, labelY - 8, 50, 16);
+                    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(labelX - 25, labelY - 8, 50, 16);
+
+                    // Prayer name text
+                    this.ctx.fillStyle = '#2c5530';
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(prayer.name, labelX, labelY);
+
+                    // Arabic name with elegant styling
+                    const arabicRadius = radius - 95;
+                    const arabicX = centerX + Math.cos(angle) * arabicRadius;
+                    const arabicY = centerY + Math.sin(angle) * arabicRadius;
+
+                    this.ctx.fillStyle = prayer.color;
+                    this.ctx.font = 'bold 14px Arial';
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeText(prayer.nameAr, arabicX, arabicY);
+                    this.ctx.fillText(prayer.nameAr, arabicX, arabicY);
+
+                    // Prayer time with elegant display
+                    if (this.state.prayerTimes && this.state.prayerTimes[prayer.name]) {
+                        const timeRadius = radius + 25;
+                        const timeX = centerX + Math.cos(angle) * timeRadius;
+                        const timeY = centerY + Math.sin(angle) * timeRadius;
+
+                        // Time background
+                        this.ctx.fillStyle = 'rgba(44, 85, 48, 0.8)';
+                        this.ctx.fillRect(timeX - 20, timeY - 8, 40, 16);
+                        this.ctx.strokeStyle = '#d4af37';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.strokeRect(timeX - 20, timeY - 8, 40, 16);
+
+                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.font = 'bold 11px Arial';
+                        this.ctx.fillText(this.state.prayerTimes[prayer.name], timeX, timeY);
+                    }
+                });
+            }
+
+            darkenColor(color, percent) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * percent);
+                const R = (num >> 16) - amt;
+                const G = (num >> 8 & 0x00FF) - amt;
+                const B = (num & 0x0000FF) - amt;
+                return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+            }
+
+            drawCompassLabels(centerX, centerY, radius) {
+                const compassLabels = [
+                    { label: 'N', angle: 0, name: 'شمال' },
+                    { label: 'E', angle: 90, name: 'شرق' },
+                    { label: 'S', angle: 180, name: 'جنوب' },
+                    { label: 'W', angle: 270, name: 'غرب' }
+                ];
+
+                compassLabels.forEach(compass => {
+                    const angle = (compass.angle - 90) * Math.PI / 180;
+                    const labelRadius = radius + 40;
+                    const x = centerX + Math.cos(angle) * labelRadius;
+                    const y = centerY + Math.sin(angle) * labelRadius;
+
+                    // Elegant compass background
+                    this.ctx.save();
+                    this.ctx.fillStyle = 'rgba(44, 85, 48, 0.9)';
+                    this.ctx.strokeStyle = '#d4af37';
+                    this.ctx.lineWidth = 2;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 18, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+
+                    // Inner highlight
+                    this.ctx.fillStyle = 'rgba(212, 175, 55, 0.3)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                    this.ctx.fill();
+
+                    // Compass letter
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = 'bold 16px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(compass.label, x, y);
+
+                    this.ctx.restore();
+                });
+            }
+
+            drawClockHands(centerX, centerY, radius) {
+                const prayerProgress = this.getPrayerProgress();
+
+                // Only draw the main prayer progress hand with enhanced design
+                if (prayerProgress) {
+                    const progressAngle = (prayerProgress.progressDegree - 90) * Math.PI / 180;
+
+                    // Enhanced main hand with elegant design
+                    this.ctx.save();
+
+                    // Hand shadow for depth
+                    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                    this.ctx.shadowBlur = 8;
+                    this.ctx.shadowOffsetX = 2;
+                    this.ctx.shadowOffsetY = 2;
+
+                    // Main hand body with gradient
+                    const handLength = radius * 0.75;
+                    const handWidth = 8;
+
+                    // Create gradient for the hand
+                    const handGradient = this.ctx.createLinearGradient(
+                        centerX, centerY,
+                        centerX + Math.cos(progressAngle) * handLength,
+                        centerY + Math.sin(progressAngle) * handLength
+                    );
+                    handGradient.addColorStop(0, '#2c5530');
+                    handGradient.addColorStop(0.7, '#1e3a21');
+                    handGradient.addColorStop(1, '#d4af37');
+
+                    // Draw the main hand with tapered design
+                    this.ctx.beginPath();
+                    this.ctx.lineWidth = handWidth;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.strokeStyle = handGradient;
+                    this.ctx.moveTo(centerX, centerY);
+                    this.ctx.lineTo(
+                        centerX + Math.cos(progressAngle) * handLength,
+                        centerY + Math.sin(progressAngle) * handLength
+                    );
+                    this.ctx.stroke();
+
+                    // Hand tip decoration
+                    const tipX = centerX + Math.cos(progressAngle) * handLength;
+                    const tipY = centerY + Math.sin(progressAngle) * handLength;
+
+                    this.ctx.shadowBlur = 0;
+                    this.ctx.beginPath();
+                    this.ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
+                    this.ctx.fillStyle = '#d4af37';
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = '#2c5530';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+
+                    this.ctx.restore();
+
+                    // Prayer progress information with elegant display
+                    this.drawProgressInfo(centerX, centerY, prayerProgress);
+                }
+            }
+
+            drawProgressInfo(centerX, centerY, prayerProgress) {
+                // Background for progress info
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                this.ctx.strokeStyle = 'rgba(44, 85, 48, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.fillRect(centerX - 60, centerY + 90, 120, 50);
+                this.ctx.strokeRect(centerX - 60, centerY + 90, 120, 50);
+
+                // Current prayer name
+                this.ctx.fillStyle = '#2c5530';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(`Current: ${prayerProgress.currentPrayer}`, centerX, centerY + 105);
+
+                // Time to next prayer
+                this.ctx.fillStyle = '#666';
+                this.ctx.font = '12px Arial';
+                this.ctx.fillText(`${prayerProgress.timeRemaining} to ${prayerProgress.nextPrayer}`, centerX, centerY + 120);
+
+                // Progress percentage
+                this.ctx.fillStyle = '#d4af37';
+                this.ctx.font = 'bold 11px Arial';
+                this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, centerX, centerY + 133);
+            }
+
+            drawHand(centerX, centerY, angle, length, width, color) {
+                this.ctx.beginPath();
+                this.ctx.lineWidth = width;
+                this.ctx.lineCap = 'round';
+                this.ctx.strokeStyle = color;
+                this.ctx.moveTo(centerX, centerY);
+                this.ctx.lineTo(
+                    centerX + Math.cos(angle) * length,
+                    centerY + Math.sin(angle) * length
+                );
+                this.ctx.stroke();
+            }
+
+            drawCenterCircle(centerX, centerY) {
+                // Enhanced center circle with multiple layers
+                this.ctx.save();
+
+                // Outer ring with glow
+                this.ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+                this.ctx.shadowBlur = 20;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+                this.ctx.fillStyle = '#2c5530';
+                this.ctx.fill();
+
+                // Middle ring
+                this.ctx.shadowBlur = 0;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+                this.ctx.fillStyle = '#d4af37';
+                this.ctx.fill();
+                this.ctx.strokeStyle = '#2c5530';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+
+                // Inner highlight circle
+                this.ctx.beginPath();
+                this.ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
+                const centerGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
+                centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                centerGradient.addColorStop(0.7, 'rgba(212, 175, 55, 0.6)');
+                centerGradient.addColorStop(1, 'rgba(44, 85, 48, 0.8)');
+                this.ctx.fillStyle = centerGradient;
+                this.ctx.fill();
+
+                // Islamic symbol in center
+                this.ctx.fillStyle = '#2c5530';
+                this.ctx.font = 'bold 14px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('☪', centerX, centerY);
+
+                this.ctx.restore();
+            }
+
+            drawBismillah(centerX, centerY, radius) {
+                // Enhanced Bismillah with elegant background
+                this.ctx.save();
+
+                // Background for Bismillah
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                this.ctx.fillRect(centerX - 120, centerY - radius + 15, 240, 60);
+                this.ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(centerX - 120, centerY - radius + 15, 240, 60);
+
+                // Arabic Bismillah with shadow effect
+                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.shadowBlur = 3;
+                this.ctx.shadowOffsetX = 1;
+                this.ctx.shadowOffsetY = 1;
+
+                this.ctx.fillStyle = '#2c5530';
+                this.ctx.font = 'bold 18px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText('بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ', centerX, centerY - radius + 35);
+
+                // English translation with elegant styling
+                this.ctx.shadowBlur = 0;
+                this.ctx.fillStyle = '#666';
+                this.ctx.font = 'italic 12px Arial';
+                this.ctx.fillText('In the name of Allah, the Most Gracious, the Most Merciful', centerX, centerY - radius + 55);
+
+                this.ctx.restore();
+            }
+
+            getPrayerProgress() {
+                if (!this.state.prayerTimes) return null;
+
+                const now = new Date();
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+                // Convert prayer times to minutes and match with positions
+                const prayerSchedule = this.prayerPositions
+                    .filter(p => p.name !== 'Midnight')
+                    .map(prayer => {
+                        const time = this.state.prayerTimes[prayer.name];
+                        if (time) {
+                            const [hours, minutes] = time.split(':').map(Number);
+                            return {
+                                ...prayer,
+                                totalMinutes: hours * 60 + minutes
+                            };
+                        }
+                        return null;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => a.totalMinutes - b.totalMinutes);
+
+                // Add midnight as reference
+                prayerSchedule.push({
+                    name: 'Midnight',
+                    degree: 180,
+                    totalMinutes: 0 // Represents start of day
+                });
+
+                // Find current prayer period
+                let currentPrayer = null;
+                let nextPrayer = null;
+
+                for (let i = 0; i < prayerSchedule.length; i++) {
+                    const prayer = prayerSchedule[i];
+                    const nextIndex = (i + 1) % prayerSchedule.length;
+                    const next = prayerSchedule[nextIndex];
+
+                    if (prayer.totalMinutes <= currentMinutes &&
+                        (next.totalMinutes > currentMinutes || next.totalMinutes === 0)) {
+                        currentPrayer = prayer;
+                        nextPrayer = next;
+                        break;
+                    }
+                }
+
+                if (!currentPrayer || !nextPrayer) return null;
+
+                // Calculate progress
+                const prayerDuration = nextPrayer.totalMinutes > currentPrayer.totalMinutes
+                    ? nextPrayer.totalMinutes - currentPrayer.totalMinutes
+                    : (24 * 60) - currentPrayer.totalMinutes + nextPrayer.totalMinutes;
+
+                const elapsed = currentMinutes >= currentPrayer.totalMinutes
+                    ? currentMinutes - currentPrayer.totalMinutes
+                    : (24 * 60) - currentPrayer.totalMinutes + currentMinutes;
+
+                const progressPercentage = (elapsed / prayerDuration) * 100;
+
+                // Calculate hand position
+                const degreeDifference = nextPrayer.degree > currentPrayer.degree
+                    ? nextPrayer.degree - currentPrayer.degree
+                    : 360 - currentPrayer.degree + nextPrayer.degree;
+
+                const progressDegree = currentPrayer.degree + (degreeDifference * progressPercentage / 100);
+
+                return {
+                    currentPrayer: currentPrayer.name,
+                    nextPrayer: nextPrayer.name,
+                    progressPercentage: Math.round(progressPercentage),
+                    progressDegree: progressDegree % 360,
+                    timeRemaining: this.formatTimeRemaining(prayerDuration - elapsed)
+                };
+            }
+
+            formatTimeRemaining(minutes) {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            }
+
+            updateLocationDisplay(locationName) {
+                this.dom.locationInfo.textContent = `📍 ${locationName}`;
+            }
+
+            // Utility functions
+            debounce(func, delay) {
+                let timeoutId;
+                return function (...args) {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => func.apply(this, args), delay);
+                };
+            }
+
+            getFromCache(key) {
+                try {
+                    const cached = localStorage.getItem(key);
+                    if (cached) {
+                        const { data, timestamp } = JSON.parse(cached);
+                        if (Date.now() - timestamp < this.config.cacheTimeout) {
+                            return data;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Cache read error:', error);
+                }
+                return null;
+            }
+
+            setCache(key, data) {
+                try {
+                    localStorage.setItem(key, JSON.stringify({
+                        data,
+                        timestamp: Date.now()
+                    }));
+                } catch (error) {
+                    console.error('Cache write error:', error);
+                }
+            }
+        }
+
+        // Initialize the clock when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new IslamicPrayerClock();
+        });
+    </script>
+</body>
+</html>
