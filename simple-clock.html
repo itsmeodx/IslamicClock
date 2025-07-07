@@ -13,45 +13,158 @@
 
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f2e8;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            color: #333;
+            color: #2c5530;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(218, 165, 32, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 69, 19, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        @keyframes arabianGlow {
+            0%, 100% { background-position: 0% 0%; }
+            25% { background-position: 100% 0%; }
+            50% { background-position: 100% 100%; }
+            75% { background-position: 0% 100%; }
         }
 
         .clock-container {
-            background: rgba(255, 255, 255, 0.1);
+            background: #ffffff;
             backdrop-filter: blur(10px);
             border-radius: 25px;
-            padding: 30px;
+            padding: 35px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 2px solid #d4af37;
             text-align: center;
-            max-width: 650px;
+            max-width: 700px;
             width: 100%;
+            position: relative;
+        }
+
+        .clock-container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid #d4af37;
+            border-radius: 15px;
+            pointer-events: none;
+        }
+
+        @keyframes islamicPattern {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .islamic-decoration {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .decoration-top,
+        .decoration-bottom {
+            font-size: 1rem;
+            color: #d4af37;
+            opacity: 0.7;
+            letter-spacing: 5px;
+        }
+
+        .decoration-top {
+            margin-bottom: 8px;
+        }
+
+        .decoration-bottom {
+            margin-top: 8px;
         }
 
         .clock-title {
             font-size: 2.5rem;
-            color: #fff;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            color: #2c5530;
+            margin-bottom: 25px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
+        }
+
+        .clock-title::before {
+            content: '☪';
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.8rem;
+            color: #d4af37;
+            opacity: 0.8;
+        }
+
+        .clock-title::after {
+            content: '☪';
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%) scaleX(-1);
+            font-size: 1.8rem;
+            color: #d4af37;
+            opacity: 0.8;
         }
 
         .digital-clock {
             font-family: 'Courier New', monospace;
             font-size: 3rem;
-            color: #fff;
-            margin: 20px 0;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            color: #2c5530;
+            margin: 25px 0;
+            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            position: relative;
+            z-index: 1;
         }
 
         .date-display {
             font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 20px;
+            color: #4a6b4a;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            position: relative;
+        }
+
+        .date-display::before {
+            content: '✦';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .date-display::after {
+            content: '✦';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-size: 0.8rem;
+            opacity: 0.7;
         }
 
         .analog-clock {
@@ -62,39 +175,60 @@
 
         .clock-canvas {
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(240, 240, 255, 0.8) 100%);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
+            border: 3px solid #d4af37;
         }
 
         .toggle-btn {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
-            color: white;
+            background: #2c5530;
+            color: #fff;
             border: none;
             padding: 15px 30px;
             font-size: 1.1rem;
-            border-radius: 50px;
+            border-radius: 25px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
-            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(44, 85, 48, 0.3);
+            margin-top: 25px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            border: 2px solid #d4af37;
+            position: relative;
+            z-index: 10;
+        }
+
+        .toggle-btn::after {
+            content: '☪';
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
 
         .toggle-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
+            box-shadow: 0 8px 20px rgba(44, 85, 48, 0.4);
+            background: #1e3d21;
+        }
+
+        .toggle-btn:hover::after {
+            opacity: 1;
         }
 
         .location-info {
-            margin-top: 15px;
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.9);
-        }
-
-        .prayer-info {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.8);
-            line-height: 1.5;
+            margin-top: 18px;
+            font-size: 1.1rem;
+            color: #2c5530;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            position: relative;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -107,7 +241,11 @@
 </head>
 <body>
     <div class="clock-container">
-        <h1 class="clock-title">🕌 Islamic Prayer Clock</h1>
+        <div class="islamic-decoration">
+            <div class="decoration-top">۞ ۞ ۞</div>
+            <h1 class="clock-title">🕌 Islamic Prayer Clock</h1>
+            <div class="decoration-bottom">۞ ۞ ۞</div>
+        </div>
 
         <div id="digital-display" class="digital-clock">
             <div id="time-display">00:00:00</div>
@@ -117,9 +255,6 @@
         <div id="analog-display" class="analog-clock" style="display: none;">
             <canvas id="clock-canvas" class="clock-canvas" width="550" height="550"></canvas>
             <div id="location-info" class="location-info">📍 Getting location...</div>
-            <div id="prayer-info" class="prayer-info">
-                🕌 Dhuhr (North) • Asr (NE) • Maghrib (East) • Isha (SE) • Midnight (South) • Fajr (West)
-            </div>
         </div>
 
         <button id="toggle-btn" class="toggle-btn">Switch to Prayer Clock</button>
@@ -160,8 +295,7 @@
                     dateDisplay: document.getElementById('date-display'),
                     toggleBtn: document.getElementById('toggle-btn'),
                     canvas: document.getElementById('clock-canvas'),
-                    locationInfo: document.getElementById('location-info'),
-                    prayerInfo: document.getElementById('prayer-info')
+                    locationInfo: document.getElementById('location-info')
                 };
 
                 // Canvas context (cached)
@@ -453,29 +587,30 @@
                 const squareX = centerX - squareSize / 2;
                 const squareY = centerY - squareSize / 2;
 
-                // Draw outer square border with website theme colors
+                // Draw outer square border with Arabian theme colors
                 this.ctx.save();
 
-                // Outer decorative border with website theme gradient
+                // Outer decorative border with Arabian gold gradient
                 const outerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
-                outerGradient.addColorStop(0, '#667eea');
-                outerGradient.addColorStop(0.5, '#6b73e8');
-                outerGradient.addColorStop(1, '#764ba2');
+                outerGradient.addColorStop(0, '#daa520');
+                outerGradient.addColorStop(0.3, '#cd853f');
+                outerGradient.addColorStop(0.7, '#8b4513');
+                outerGradient.addColorStop(1, '#2d5016');
 
                 this.ctx.fillStyle = outerGradient;
                 this.ctx.fillRect(squareX - 8, squareY - 8, squareSize + 16, squareSize + 16);
 
-                // Inner square with glassmorphism effect matching website
+                // Inner square with warm Arabian colors
                 const innerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
-                innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-                innerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-                innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
+                innerGradient.addColorStop(0, 'rgba(255, 248, 220, 0.2)');
+                innerGradient.addColorStop(0.5, 'rgba(245, 222, 179, 0.15)');
+                innerGradient.addColorStop(1, 'rgba(218, 165, 32, 0.1)');
 
                 this.ctx.fillStyle = innerGradient;
                 this.ctx.fillRect(squareX, squareY, squareSize, squareSize);
 
-                // Border lines with website theme color
-                this.ctx.strokeStyle = '#764ba2';
+                // Border lines with Arabian gold
+                this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 4;
                 this.ctx.strokeRect(squareX, squareY, squareSize, squareSize);
 
@@ -489,19 +624,19 @@
                 const bismillahWidth = squareSize * 0.7;
                 const bismillahHeight = 30;
 
-                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                this.ctx.fillStyle = 'rgba(255, 248, 220, 0.98)';
                 this.ctx.fillRect(centerX - bismillahWidth / 2, bismillahY, bismillahWidth, bismillahHeight);
-                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.8)';
+                this.ctx.strokeStyle = 'rgba(139, 69, 19, 0.8)';
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeRect(centerX - bismillahWidth / 2, bismillahY, bismillahWidth, bismillahHeight);
 
                 // Arabic Bismillah with shadow effect
-                this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                this.ctx.shadowBlur = 2;
+                this.ctx.shadowColor = 'rgba(139, 69, 19, 0.4)';
+                this.ctx.shadowBlur = 3;
                 this.ctx.shadowOffsetX = 1;
                 this.ctx.shadowOffsetY = 1;
 
-                this.ctx.fillStyle = '#764ba2';
+                this.ctx.fillStyle = '#8b4513';
                 this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -509,52 +644,52 @@
 
                 // English translation
                 this.ctx.shadowBlur = 0;
-                this.ctx.fillStyle = '#667eea';
+                this.ctx.fillStyle = '#cd853f';
                 this.ctx.font = 'italic 9px Arial';
                 this.ctx.fillText('In the name of Allah, the Most Gracious, the Most Merciful', centerX, bismillahY + 23);
             }
 
             drawClockFace(centerX, centerY, radius) {
-                // Outer decorative border with website theme colors
+                // Outer decorative border with Arabian theme colors
                 const outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
-                outerGradient.addColorStop(0, '#667eea');
-                outerGradient.addColorStop(0.5, '#5a6fd8');
-                outerGradient.addColorStop(1, '#4c5bc6');
+                outerGradient.addColorStop(0, '#daa520');
+                outerGradient.addColorStop(0.5, '#cd853f');
+                outerGradient.addColorStop(1, '#8b4513');
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
                 this.ctx.fillStyle = outerGradient;
                 this.ctx.fill();
 
-                // Main clock face with elegant gradient matching website theme
+                // Main clock face with warm Arabian gradient
                 const mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-                mainGradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-                mainGradient.addColorStop(0.3, 'rgba(248, 248, 255, 0.9)');
-                mainGradient.addColorStop(0.7, 'rgba(240, 240, 255, 0.85)');
-                mainGradient.addColorStop(0.9, 'rgba(230, 235, 255, 0.8)');
-                mainGradient.addColorStop(1, 'rgba(220, 225, 255, 0.75)');
+                mainGradient.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
+                mainGradient.addColorStop(0.3, 'rgba(250, 240, 210, 0.95)');
+                mainGradient.addColorStop(0.7, 'rgba(245, 222, 179, 0.9)');
+                mainGradient.addColorStop(0.9, 'rgba(238, 203, 173, 0.85)');
+                mainGradient.addColorStop(1, 'rgba(222, 184, 135, 0.8)');
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 this.ctx.fillStyle = mainGradient;
                 this.ctx.fill();
 
-                // Elegant border matching website theme
-                this.ctx.strokeStyle = '#764ba2';
+                // Elegant border with Arabian brown
+                this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 4;
                 this.ctx.stroke();
 
-                // Inner decorative circles with website theme colors
+                // Inner decorative circles with Arabian gold tones
                 for (let i = 1; i <= 3; i++) {
                     this.ctx.beginPath();
                     this.ctx.arc(centerX, centerY, radius - (i * 12), 0, 2 * Math.PI);
-                    this.ctx.strokeStyle = `rgba(102, 126, 234, ${0.4 - i * 0.1})`;
+                    this.ctx.strokeStyle = `rgba(218, 165, 32, ${0.4 - i * 0.1})`;
                     this.ctx.lineWidth = 1;
                     this.ctx.stroke();
                 }
 
-                // Subtle hour markers with website theme colors
-                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
+                // Subtle hour markers with Arabian brown
+                this.ctx.strokeStyle = 'rgba(139, 69, 19, 0.4)';
                 this.ctx.lineWidth = 1;
                 for (let i = 0; i < 24; i++) {
                     const angle = (i * 15) * Math.PI / 180;
@@ -580,14 +715,14 @@
             }
 
             drawIslamicGeometry(centerX, centerY, size) {
-                // 8-pointed star (Khatam) with website theme colors
+                // 8-pointed star (Khatam) with Arabian theme colors
                 this.ctx.save();
 
-                // Outer star with gradient using website theme
+                // Outer star with gradient using Arabian gold
                 const starGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
-                starGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
-                starGradient.addColorStop(0.7, 'rgba(102, 126, 234, 0.4)');
-                starGradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+                starGradient.addColorStop(0, 'rgba(218, 165, 32, 0.9)');
+                starGradient.addColorStop(0.7, 'rgba(205, 133, 63, 0.6)');
+                starGradient.addColorStop(1, 'rgba(139, 69, 19, 0.3)');
 
                 this.ctx.beginPath();
                 for (let i = 0; i < 16; i++) {
@@ -605,16 +740,16 @@
                 this.ctx.closePath();
                 this.ctx.fillStyle = starGradient;
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#667eea';
+                this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
                 // Inner ornamental circle
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, size * 0.25, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#667eea';
+                this.ctx.fillStyle = '#daa520';
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#764ba2';
+                this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 1;
                 this.ctx.stroke();
 
@@ -669,14 +804,14 @@
                         const timeX = centerX + Math.cos(angle) * timeRadius;
                         const timeY = centerY + Math.sin(angle) * timeRadius;
 
-                        // Time background with website theme
-                        this.ctx.fillStyle = 'rgba(118, 75, 162, 0.9)';
+                        // Time background with Arabian theme
+                        this.ctx.fillStyle = 'rgba(139, 69, 19, 0.95)';
                         this.ctx.fillRect(timeX - 18, timeY - 6, 36, 12);
-                        this.ctx.strokeStyle = '#667eea';
+                        this.ctx.strokeStyle = '#daa520';
                         this.ctx.lineWidth = 1;
                         this.ctx.strokeRect(timeX - 18, timeY - 6, 36, 12);
 
-                        this.ctx.fillStyle = '#ffffff';
+                        this.ctx.fillStyle = '#fff8dc';
                         this.ctx.font = 'bold 9px Arial';
                         this.ctx.textAlign = 'center';
                         this.ctx.textBaseline = 'middle';
@@ -728,15 +863,15 @@
                     const handLength = radius * 0.75;
                     const handWidth = 8;
 
-                    // Create gradient for the hand with website theme colors
+                    // Create gradient for the hand with Arabian theme colors
                     const handGradient = this.ctx.createLinearGradient(
                         centerX, centerY,
                         centerX + Math.cos(progressAngle) * handLength,
                         centerY + Math.sin(progressAngle) * handLength
                     );
-                    handGradient.addColorStop(0, '#764ba2');
-                    handGradient.addColorStop(0.7, '#6b4a98');
-                    handGradient.addColorStop(1, '#667eea');
+                    handGradient.addColorStop(0, '#8b4513');
+                    handGradient.addColorStop(0.5, '#cd853f');
+                    handGradient.addColorStop(1, '#daa520');
 
                     // Draw the main hand with tapered design
                     this.ctx.beginPath();
@@ -757,9 +892,9 @@
                     this.ctx.shadowBlur = 0;
                     this.ctx.beginPath();
                     this.ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
-                    this.ctx.fillStyle = '#667eea';
+                    this.ctx.fillStyle = '#daa520';
                     this.ctx.fill();
-                    this.ctx.strokeStyle = '#764ba2';
+                    this.ctx.strokeStyle = '#8b4513';
                     this.ctx.lineWidth = 2;
                     this.ctx.stroke();
 
@@ -776,69 +911,32 @@
                 const progressX = squareX + 15; // 15px margin from left edge
                 const progressY = squareY + squareSize - progressHeight - 15; // 15px margin from bottom edge
 
-                // Background for progress info with website theme
-                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
-                this.ctx.lineWidth = 1;
+                // Background for progress info with Arabian theme
+                this.ctx.fillStyle = 'rgba(255, 248, 220, 0.98)';
+                this.ctx.strokeStyle = 'rgba(139, 69, 19, 0.4)';
+                this.ctx.lineWidth = 2;
                 this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
                 this.ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
 
-                // Current prayer name with website theme
-                this.ctx.fillStyle = '#764ba2';
+                // Current prayer name with Arabian theme
+                this.ctx.fillStyle = '#8b4513';
                 this.ctx.font = 'bold 12px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText(`Current: ${prayerProgress.currentPrayer}`, progressX + progressWidth/2, progressY + 15);
 
                 // Time to next prayer
-                this.ctx.fillStyle = '#667eea';
+                this.ctx.fillStyle = '#cd853f';
                 this.ctx.font = '11px Arial';
                 this.ctx.fillText(`${prayerProgress.timeRemaining} to ${prayerProgress.nextPrayer}`, progressX + progressWidth/2, progressY + 30);
 
-                // Progress percentage with website theme
-                this.ctx.fillStyle = '#667eea';
+                // Progress percentage with Arabian theme
+                this.ctx.fillStyle = '#daa520';
                 this.ctx.font = 'bold 10px Arial';
                 this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, progressX + progressWidth/2, progressY + 45);
             }
 
-            drawLoadingInfo(squareX, squareY, squareSize) {
-                // Position in bottom left corner of the square border
-                const progressWidth = 140;
-                const progressHeight = 55;
-                const progressX = squareX + 15; // 15px margin from left edge
-                const progressY = squareY + squareSize - progressHeight - 15; // 15px margin from bottom edge
 
-                // Background for loading info with website theme
-                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
-                this.ctx.lineWidth = 1;
-                this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
-                this.ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
-
-                // Status based on retry count
-                let mainMessage = 'Loading Prayer Times...';
-                let subMessage = 'Fetching from API or cache';
-
-                if (this.state.retryCount >= this.config.maxRetries) {
-                    mainMessage = 'Prayer Times Unavailable';
-                    subMessage = 'Will retry periodically';
-                } else if (this.state.retryCount > 0) {
-                    mainMessage = `Retrying... (${this.state.retryCount}/${this.config.maxRetries})`;
-                    subMessage = 'Please check connection';
-                }
-
-                // Main message
-                this.ctx.fillStyle = '#764ba2';
-                this.ctx.font = 'bold 11px Arial';
-                this.ctx.textAlign = 'center';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(mainMessage, progressX + progressWidth/2, progressY + 20);
-
-                // Status message
-                this.ctx.fillStyle = '#667eea';
-                this.ctx.font = '9px Arial';
-                this.ctx.fillText(subMessage, progressX + progressWidth/2, progressY + 35);
-            }
 
             drawHand(centerX, centerY, angle, length, width, color) {
                 this.ctx.beginPath();
@@ -854,39 +952,39 @@
             }
 
             drawCenterCircle(centerX, centerY) {
-                // Enhanced center circle with website theme colors
+                // Enhanced center circle with Arabian theme colors
                 this.ctx.save();
 
-                // Outer ring with glow using website theme
-                this.ctx.shadowColor = 'rgba(102, 126, 234, 0.6)';
-                this.ctx.shadowBlur = 20;
+                // Outer ring with glow using Arabian theme
+                this.ctx.shadowColor = 'rgba(218, 165, 32, 0.7)';
+                this.ctx.shadowBlur = 25;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#764ba2';
+                this.ctx.fillStyle = '#8b4513';
                 this.ctx.fill();
 
-                // Middle ring with website theme
+                // Middle ring with Arabian theme
                 this.ctx.shadowBlur = 0;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#667eea';
+                this.ctx.fillStyle = '#daa520';
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#764ba2';
+                this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
-                // Inner highlight circle with website theme
+                // Inner highlight circle with Arabian theme
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
                 const centerGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
-                centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-                centerGradient.addColorStop(0.7, 'rgba(102, 126, 234, 0.6)');
-                centerGradient.addColorStop(1, 'rgba(118, 75, 162, 0.8)');
+                centerGradient.addColorStop(0, 'rgba(255, 248, 220, 0.9)');
+                centerGradient.addColorStop(0.7, 'rgba(218, 165, 32, 0.7)');
+                centerGradient.addColorStop(1, 'rgba(139, 69, 19, 0.9)');
                 this.ctx.fillStyle = centerGradient;
                 this.ctx.fill();
 
-                // Islamic symbol in center with website theme
-                this.ctx.fillStyle = '#764ba2';
+                // Islamic symbol in center with Arabian theme
+                this.ctx.fillStyle = '#8b4513';
                 this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
