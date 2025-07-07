@@ -680,7 +680,7 @@
             constructor() {
                 // Configuration
                 this.config = {
-                    apiUrl: 'https://api.aladhan.com/v1/timings',
+                    apiUrl: 'https://api.aladhan.com/v1/timingsByAddress',
                     updateInterval: 1000,
                     locationTimeout: 10000,
                     cacheTimeout: 86400000, // 24 hours - keep cache longer
@@ -929,9 +929,7 @@
                     this.updateLanguageDisplay(); // Set up translations first
                     this.updateClockDisplay();
                     await this.initializeLocation();
-                    await this.fetchPrayerTimes();
-                    console.log('Fetching Hijri date during initialization...');
-                    await this.fetchHijriDate();
+                    await this.fetchPrayerTimes(); // This now also fetches Hijri date
                     this.state.isInitialized = true;
                     this.startClock();
                     console.log('Initialization complete');
@@ -941,7 +939,7 @@
                     this.startClock(); // Start clock without prayer times - will only show current time
                     // Try to fetch Hijri date even if other initialization fails
                     console.log('Attempting Hijri date fetch after initialization error...');
-                    this.fetchHijriDate();
+                    this.fetchHijriDate(); // Fallback to separate call if needed
                 }
             }            setupEventListeners() {
                 this.dom.toggleBtn.addEventListener('click', () => this.toggleClockType());
@@ -1071,8 +1069,19 @@
                     this.state.lastApiCall = now;
                     this.state.retryCount++;
 
-                    const dateString = new Date().toISOString().split('T')[0];
-                    const url = `${this.config.apiUrl}/${dateString}?latitude=${this.state.location.lat}&longitude=${this.state.location.lng}&method=${this.state.calculationMethod}`;
+                    const dateString = new Date().toISOString().split('T')[0].split('-').reverse().join('-'); // Convert YYYY-MM-DD to DD-MM-YYYY
+
+                    // Get location name for the address parameter
+                    let locationAddress = '';
+                    try {
+                        const locationName = await this.getLocationName(this.state.location);
+                        locationAddress = encodeURIComponent(locationName);
+                    } catch (error) {
+                        // Fallback to coordinates if location name fails
+                        locationAddress = `${this.state.location.lat},${this.state.location.lng}`;
+                    }
+
+                    const url = `${this.config.apiUrl}/${dateString}?address=${locationAddress}&method=${this.state.calculationMethod}`;
 
                     const response = await fetch(url);
                     const data = await response.json();
@@ -1084,6 +1093,11 @@
                         this.state.retryCount = 0; // Reset retry count on success
                         this.setCache(cacheKey, this.state.prayerTimes);
                         console.log('Prayer times fetched and cached successfully');
+
+                        // Extract and process Hijri date from the same API response
+                        if (data.data.date && data.data.date.hijri) {
+                            this.processHijriDateFromAPI(data.data.date.hijri, today);
+                        }
                     } else {
                         throw new Error('Invalid API response structure');
                     }
@@ -1108,6 +1122,43 @@
                             }
                         }
                     }
+                }
+            }
+
+            // Process Hijri date from the prayer times API response
+            processHijriDateFromAPI(hijriData, today) {
+                try {
+                    // Get month index (1-12) and convert to array index (0-11)
+                    const monthIndex = parseInt(hijriData.month.number) - 1;
+
+                    // Get weekday from current date
+                    const gregorianDate = new Date();
+                    const weekdayIndex = gregorianDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+                    // Use weekday from API if available, otherwise use our arrays
+                    const weekdayArabic = hijriData.weekday?.ar || this.hijriWeekdays.ar[weekdayIndex];
+                    const weekdayEnglish = hijriData.weekday?.en || this.hijriWeekdays.en[weekdayIndex];
+
+                    // Use month from API if available, otherwise use our arrays
+                    const monthArabic = hijriData.month?.ar || this.hijriMonths.ar[monthIndex];
+                    const monthEnglish = hijriData.month?.en || this.hijriMonths.en[monthIndex];
+
+                    this.state.hijriDate = {
+                        day: hijriData.day,
+                        month: monthEnglish,
+                        monthAr: monthArabic,
+                        year: hijriData.year,
+                        weekday: weekdayEnglish,
+                        weekdayAr: weekdayArabic
+                    };
+
+                    this.state.lastHijriFetch = today;
+                    const hijriCacheKey = `hijri-date-${today}`;
+                    this.setCache(hijriCacheKey, this.state.hijriDate);
+                    this.updateHijriDate();
+                    console.log('Hijri date extracted from prayer times API:', this.state.hijriDate);
+                } catch (error) {
+                    console.error('Error processing Hijri date from API:', error);
                 }
             }
 
@@ -1420,15 +1471,9 @@
 
                 const today = new Date().toDateString();
                 if (this.state.lastFetchDate && this.state.lastFetchDate !== today) {
-                    console.log('New day detected, refreshing prayer times...');
+                    console.log('New day detected, refreshing prayer times and Hijri date...');
                     this.state.retryCount = 0; // Reset retry count for new day
-                    this.fetchPrayerTimes();
-                }
-
-                // Also refresh Hijri date on new day
-                if (this.state.lastHijriFetch && this.state.lastHijriFetch !== today) {
-                    console.log('New day detected, refreshing Hijri date...');
-                    this.fetchHijriDate();
+                    this.fetchPrayerTimes(); // This will also refresh Hijri date
                 }
 
                 // Periodic retry if we don't have prayer times
@@ -1437,19 +1482,19 @@
                     // Retry every 5 minutes if we have no data
                     if (!this.state.lastApiCall || (now - this.state.lastApiCall) > (5 * 60 * 1000)) {
                         console.log('No prayer times available, attempting to fetch...');
-                        this.fetchPrayerTimes();
+                        this.fetchPrayerTimes(); // This will also fetch Hijri date
                     }
                 }
 
-                // Periodic retry for Hijri date if we don't have it
+                // Fallback: Periodic retry for Hijri date if we still don't have it after prayer times fetch
                 if (!this.state.hijriDate) {
                     const now = Date.now();
                     const lastAttempt = this.state.lastHijriAttempt || 0;
                     // Retry every 5 minutes if we have no Hijri data
                     if ((now - lastAttempt) > (5 * 60 * 1000)) {
-                        console.log('No Hijri date available, attempting to fetch...');
+                        console.log('No Hijri date available, attempting separate fetch...');
                         this.state.lastHijriAttempt = now;
-                        this.fetchHijriDate();
+                        this.fetchHijriDate(); // Fallback to separate call
                     }
                 }
             }            drawAnalogClock() {
@@ -2216,7 +2261,6 @@
                     if (refreshBtn) {
                         refreshBtn.disabled = true;
                         refreshBtn.textContent = this.getText('loading').replace('...', '');
-                        // refreshBtn.style.transform = 'rotate(180deg)';
                     }
 
                     // Clear all prayer times cache
@@ -2231,12 +2275,15 @@
                     this.state.hijriDate = null;
                     this.state.lastHijriFetch = null;
 
-                    // Force refresh both prayer times and Hijri date
+                    // Force refresh prayer times (which will also fetch Hijri date)
                     console.log('Manual refresh: Fetching fresh prayer times and Hijri date...');
-                    await Promise.all([
-                        this.fetchPrayerTimes(true),
-                        this.fetchHijriDate()
-                    ]);
+                    await this.fetchPrayerTimes(true);
+
+                    // If Hijri date wasn't included in the response, try separate call as fallback
+                    if (!this.state.hijriDate) {
+                        console.log('Hijri date not found in prayer times response, trying separate fetch...');
+                        await this.fetchHijriDate();
+                    }
 
                     // Force redraw
                     if (this.state.clockType === 'analog') {
@@ -2252,7 +2299,6 @@
                     if (refreshBtn) {
                         refreshBtn.disabled = false;
                         refreshBtn.textContent = this.getText('refresh');
-                        // refreshBtn.style.transform = 'rotate(0deg)';
                     }
                 }
             }
