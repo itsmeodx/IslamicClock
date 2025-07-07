@@ -628,40 +628,9 @@
 
                     this.ctx.restore();
 
-                    // Enhanced prayer name with better typography - moved further out
-                    const labelRadius = radius - 10;
-                    const labelX = centerX + Math.cos(angle) * labelRadius;
-                    const labelY = centerY + Math.sin(angle) * labelRadius;
-
-                    // Prayer name background for better readability
-                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                    this.ctx.fillRect(labelX - 22, labelY - 7, 44, 14);
-                    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                    this.ctx.lineWidth = 1;
-                    this.ctx.strokeRect(labelX - 22, labelY - 7, 44, 14);
-
-                    // Prayer name text
-                    this.ctx.fillStyle = '#2c5530';
-                    this.ctx.font = 'bold 10px Arial';
-                    this.ctx.textAlign = 'center';
-                    this.ctx.textBaseline = 'middle';
-                    this.ctx.fillText(prayer.name, labelX, labelY);
-
-                    // Arabic name with elegant styling - moved to inside with more space
-                    const arabicRadius = radius - 110;
-                    const arabicX = centerX + Math.cos(angle) * arabicRadius;
-                    const arabicY = centerY + Math.sin(angle) * arabicRadius;
-
-                    this.ctx.fillStyle = prayer.color;
-                    this.ctx.font = 'bold 12px Arial';
-                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                    this.ctx.lineWidth = 1;
-                    this.ctx.strokeText(prayer.nameAr, arabicX, arabicY);
-                    this.ctx.fillText(prayer.nameAr, arabicX, arabicY);
-
-                    // Prayer time with elegant display - positioned better without compass labels
+                    // Prayer time with elegant display - positioned where English name was
                     if (this.state.prayerTimes && this.state.prayerTimes[prayer.name]) {
-                        const timeRadius = radius + 45;
+                        const timeRadius = radius - 10;
                         const timeX = centerX + Math.cos(angle) * timeRadius;
                         const timeY = centerY + Math.sin(angle) * timeRadius;
 
@@ -674,8 +643,22 @@
 
                         this.ctx.fillStyle = '#ffffff';
                         this.ctx.font = 'bold 9px Arial';
+                        this.ctx.textAlign = 'center';
+                        this.ctx.textBaseline = 'middle';
                         this.ctx.fillText(this.state.prayerTimes[prayer.name], timeX, timeY);
                     }
+
+                    // Arabic name with elegant styling - moved to inside with more space
+                    const arabicRadius = radius - 110;
+                    const arabicX = centerX + Math.cos(angle) * arabicRadius;
+                    const arabicY = centerY + Math.sin(angle) * arabicRadius;
+
+                    this.ctx.fillStyle = prayer.color;
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeText(prayer.nameAr, arabicX, arabicY);
+                    this.ctx.fillText(prayer.nameAr, arabicX, arabicY);
                 });
             }
 
