@@ -593,15 +593,12 @@
             </div>
 
             <div class="settings-group">
-                <label for="dst-toggle" id="daylight-saving-label">Daylight Saving Time:</label>
-                <div class="toggle-container">
-                    <span class="toggle-label-left" id="dst-off-label">Off</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="dst-toggle">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="toggle-label-right" id="dst-on-label">On (+1h)</span>
-                </div>
+                <label for="dst-select" id="daylight-saving-label">Daylight Saving Time:</label>
+                <select id="dst-select">
+                    <option value="-1">-1 Hour</option>
+                    <option value="0">Off</option>
+                    <option value="1">+1 Hour</option>
+                </select>
             </div>
 
             <div class="settings-group">
@@ -726,7 +723,7 @@
                     settingsPanel: document.getElementById('settings-panel'),
                     languageToggle: document.getElementById('language-toggle'),
                     calculationMethod: document.getElementById('calculation-method'),
-                    dstToggle: document.getElementById('dst-toggle'),
+                    dstSelect: document.getElementById('dst-select'),
                     progressToggle: document.getElementById('progress-toggle'),
                     saveSettings: document.getElementById('save-settings'),
                     resetSettings: document.getElementById('reset-settings'),
@@ -805,8 +802,9 @@
                         language: 'Language',
                         calculationMethod: 'Calculation Method',
                         daylightSaving: 'Daylight Saving Time',
+                        dstMinus1Hour: '-1 Hour',
                         dstOff: 'Off',
-                        dstOn: 'On (+1h)',
+                        dstPlus1Hour: '+1 Hour',
                         progressSection: 'Show Progress Section',
                         progressHide: 'Hide',
                         progressShow: 'Show',
@@ -878,8 +876,9 @@
                         language: 'اللغة',
                         calculationMethod: 'طريقة الحساب',
                         daylightSaving: 'التوقيت الصيفي',
+                        dstMinus1Hour: '- ١ ساعة',
                         dstOff: 'معطل',
-                        dstOn: 'مفعل (+١س)',
+                        dstPlus1Hour: '+ ١ ساعة',
                         progressSection: 'إظهار قسم التقدم',
                         progressHide: 'إخفاء',
                         progressShow: 'إظهار',
@@ -1357,19 +1356,13 @@
                 }
 
                 // Update daylight saving dropdown options
-                const daylightSavingSelect = document.getElementById('daylight-saving');
+                const daylightSavingSelect = document.getElementById('dst-select');
                 if (daylightSavingSelect) {
                     const options = daylightSavingSelect.getElementsByTagName('option');
-                    if (options[0]) options[0].textContent = this.getText('dstNoAdjustment');
-                    if (options[1]) options[1].textContent = this.getText('dstAdd1Hour');
-                    if (options[2]) options[2].textContent = this.getText('dstSubtract1Hour');
+                    if (options[0]) options[0].textContent = this.getText('dstMinus1Hour');
+                    if (options[1]) options[1].textContent = this.getText('dstOff');
+                    if (options[2]) options[2].textContent = this.getText('dstPlus1Hour');
                 }
-
-                // Update DST toggle labels
-                const dstOffLabel = document.getElementById('dst-off-label');
-                const dstOnLabel = document.getElementById('dst-on-label');
-                if (dstOffLabel) dstOffLabel.textContent = this.getText('dstOff');
-                if (dstOnLabel) dstOnLabel.textContent = this.getText('dstOn');
 
                 // Update progress toggle labels
                 const progressHideLabel = document.getElementById('progress-hide-label');
@@ -2053,7 +2046,7 @@
                 // Set current values in the UI
                 this.dom.languageToggle.checked = this.state.language === 'ar';
                 this.dom.calculationMethod.value = this.state.calculationMethod;
-                this.dom.dstToggle.checked = this.state.daylightSaving === 1;
+                this.dom.dstSelect.value = this.state.daylightSaving.toString();
                 this.dom.progressToggle.checked = this.state.showProgress;
 
                 // Set prayer offsets
@@ -2077,7 +2070,7 @@
                 // Get values from UI
                 const newLanguage = this.dom.languageToggle.checked ? 'ar' : 'en';
                 const newCalculationMethod = this.dom.calculationMethod.value;
-                const newDaylightSaving = this.dom.dstToggle.checked ? 1 : 0;
+                const newDaylightSaving = parseInt(this.dom.dstSelect.value);
                 const newShowProgress = this.dom.progressToggle.checked;
                 const newOffsets = {
                     Fajr: parseInt(this.dom.fajrOffset.value) || 0,
@@ -2132,8 +2125,8 @@
                 if (methodChanged || dstChanged || offsetsChanged) {
                     // For immediate feedback with DST changes
                     if (dstChanged && !methodChanged && !offsetsChanged && this.state.prayerTimes) {
-                        const newDstMinutes = newDaylightSaving === 1 ? 60 : 0;
-                        const oldDstMinutes = oldDaylightSaving === 1 ? 60 : 0; // Use old value
+                        const newDstMinutes = newDaylightSaving * 60; // -60, 0, or +60 minutes
+                        const oldDstMinutes = oldDaylightSaving * 60; // -60, 0, or +60 minutes
                         const netAdjustment = newDstMinutes - oldDstMinutes;
 
                         console.log(`DST Change: old=${oldDaylightSaving}, new=${newDaylightSaving}, adjustment=${netAdjustment} minutes`);
@@ -2324,8 +2317,8 @@
                 });
 
                 // Apply daylight saving adjustment to all prayer times
-                if (this.state.daylightSaving === 1) {
-                    const dstMinutes = 60; // Add 1 hour
+                if (this.state.daylightSaving !== 0) {
+                    const dstMinutes = this.state.daylightSaving * 60; // -60, 0, or +60 minutes
                     Object.keys(adjustedTimes).forEach(prayer => {
                         if (adjustedTimes[prayer] && adjustedTimes[prayer].includes(':')) {
                             adjustedTimes[prayer] = this.adjustTimeByMinutes(adjustedTimes[prayer], dstMinutes);
