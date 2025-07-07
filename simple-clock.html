@@ -440,6 +440,84 @@
             background: #e0e0e0;
         }
 
+        .settings-btn.refresh {
+            background: #f39c12;
+            color: white;
+            border: 1px solid #e67e22;
+        }
+
+        .settings-btn.refresh:hover {
+            background: #e67e22;
+            /* transform: rotate(180deg); */
+        }
+
+        /* Toggle Switch Styles */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .toggle-label-left,
+        .toggle-label-right {
+            font-size: 0.8rem;
+            color: #2c5530;
+            font-weight: 500;
+            min-width: 50px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+            border: 2px solid #d4af37;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #2c5530;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-slider:hover {
+            box-shadow: 0 0 5px rgba(44, 85, 48, 0.3);
+        }
+
         /* RTL adjustments for settings */
         :root[dir="rtl"] .settings-menu {
             left: auto;
@@ -450,6 +528,21 @@
             left: auto;
             right: 0;
         }
+
+        /* RTL adjustments for toggles */
+        :root[dir="rtl"] .toggle-label-left,
+        :root[dir="rtl"] .toggle-label-right {
+            text-align: center;
+        }
+
+        :root[dir="rtl"] .toggle-slider:before {
+            left: auto;
+            right: 2px;
+        }
+
+        :root[dir="rtl"] input:checked + .toggle-slider:before {
+            transform: translateX(-26px);
+        }
     </style>
 </head>
 <body>
@@ -459,11 +552,15 @@
             <h3 id="settings-title">Settings</h3>
 
             <div class="settings-group">
-                <label for="language-select" id="language-label">Language:</label>
-                <select id="language-select">
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                </select>
+                <label for="language-toggle" id="language-label">Language:</label>
+                <div class="toggle-container">
+                    <span class="toggle-label-left" id="lang-left-label">English</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="language-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label-right" id="lang-right-label">العربية</span>
+                </div>
             </div>
 
             <div class="settings-group">
@@ -475,14 +572,13 @@
                     <option value="3">Muslim World League</option>
                     <option value="4">Umm Al-Qura University, Makkah</option>
                     <option value="5">Egyptian General Authority of Survey</option>
-                    <option value="6">Institute of Geophysics, University of Tehran</option>
-                    <option value="7">Shia Ithna-Ashari, Leva Institute, Qum</option>
+                    <option value="7">Institute of Geophysics, University of Tehran</option>
                     <option value="8">Gulf Region</option>
                     <option value="9">Kuwait</option>
                     <option value="10">Qatar</option>
                     <option value="11">Majlis Ugama Islam Singapura, Singapore</option>
                     <option value="12">Union Organization Islamic de France</option>
-                    <option value="13">Diyanet İşleri Başkanlığı, Turkey (experimental)</option>
+                    <option value="13">Diyanet İşleri Başkanlığı, Turkey</option>
                     <option value="14">Spiritual Administration of Muslims of Russia</option>
                     <option value="15">Moonsighting Committee Worldwide (Moonsighting.com)</option>
                     <option value="16">Dubai (experimental)</option>
@@ -494,6 +590,18 @@
                     <option value="22">Comunidade Islamica de Lisboa</option>
                     <option value="23">Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan</option>
                 </select>
+            </div>
+
+            <div class="settings-group">
+                <label for="dst-toggle" id="daylight-saving-label">Daylight Saving Time:</label>
+                <div class="toggle-container">
+                    <span class="toggle-label-left" id="dst-off-label">Off</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dst-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label-right" id="dst-on-label">On (+1h)</span>
+                </div>
             </div>
 
             <div class="settings-group">
@@ -527,6 +635,7 @@
             </div>
 
             <div class="settings-actions">
+                <button class="settings-btn refresh" id="refresh-data">Refresh</button>
                 <button class="settings-btn primary" id="save-settings">Save</button>
                 <button class="settings-btn secondary" id="reset-settings">Reset</button>
             </div>
@@ -574,6 +683,7 @@
                     clockType: localStorage.getItem('clockType') || 'digital',
                     language: localStorage.getItem('language') || 'en', // 'en' or 'ar'
                     calculationMethod: localStorage.getItem('calculationMethod') || this.config.defaultCalculationMethod,
+                    daylightSaving: parseInt(localStorage.getItem('daylightSaving') || '0'), // -1, 0, or 1
                     prayerOffsets: JSON.parse(localStorage.getItem('prayerOffsets') || '{"Fajr":0,"Sunrise":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0}'),
                     prayerTimes: null,
                     location: null,
@@ -601,10 +711,12 @@
                     // Settings menu elements
                     settingsToggle: document.getElementById('settings-toggle'),
                     settingsPanel: document.getElementById('settings-panel'),
-                    languageSelect: document.getElementById('language-select'),
+                    languageToggle: document.getElementById('language-toggle'),
                     calculationMethod: document.getElementById('calculation-method'),
+                    dstToggle: document.getElementById('dst-toggle'),
                     saveSettings: document.getElementById('save-settings'),
                     resetSettings: document.getElementById('reset-settings'),
+                    refreshData: document.getElementById('refresh-data'),
                     // Prayer offset inputs
                     fajrOffset: document.getElementById('fajr-offset'),
                     sunriseOffset: document.getElementById('sunrise-offset'),
@@ -678,9 +790,13 @@
                         settings: 'Settings',
                         language: 'Language',
                         calculationMethod: 'Calculation Method',
+                        daylightSaving: 'Daylight Saving Time',
+                        dstOff: 'Off',
+                        dstOn: 'On (+1h)',
                         prayerTimeAdjustments: 'Prayer Time Adjustments (minutes)',
                         save: 'Save',
                         reset: 'Reset',
+                        refresh: 'Refresh',
                         // Calculation method names
                         calculationMethods: {
                             0: 'Shia Ithna-Ashari, Leva Institute, Qum',
@@ -689,14 +805,13 @@
                             3: 'Muslim World League',
                             4: 'Umm Al-Qura University, Makkah',
                             5: 'Egyptian General Authority of Survey',
-                            6: 'Institute of Geophysics, University of Tehran',
-                            7: 'Shia Ithna-Ashari, Leva Institute, Qum',
+                            7: 'Institute of Geophysics, University of Tehran',
                             8: 'Gulf Region',
                             9: 'Kuwait',
                             10: 'Qatar',
                             11: 'Majlis Ugama Islam Singapura, Singapore',
                             12: 'Union Organization Islamic de France',
-                            13: 'Diyanet İşleri Başkanlığı, Turkey (experimental)',
+                            13: 'Diyanet İşleri Başkanlığı, Turkey',
                             14: 'Spiritual Administration of Muslims of Russia',
                             15: 'Moonsighting Committee Worldwide (Moonsighting.com)',
                             16: 'Dubai (experimental)',
@@ -745,9 +860,13 @@
                         settings: 'الإعدادات',
                         language: 'اللغة',
                         calculationMethod: 'طريقة الحساب',
+                        daylightSaving: 'التوقيت الصيفي',
+                        dstOff: 'معطل',
+                        dstOn: 'مفعل (+١س)',
                         prayerTimeAdjustments: 'تعديل أوقات الصلاة (بالدقائق)',
                         save: 'حفظ',
                         reset: 'إعادة تعيين',
+                        refresh: 'تحديث',
                         // Calculation method names
                         calculationMethods: {
                             0: 'الشيعة الإثنا عشرية، معهد ليفا، قم',
@@ -756,14 +875,13 @@
                             3: 'رابطة العالم الإسلامي',
                             4: 'جامعة أم القرى، مكة المكرمة',
                             5: 'الهيئة المصرية العامة للمساحة',
-                            6: 'معهد الجيوفيزياء، جامعة طهران',
-                            7: 'الشيعة الإثنا عشرية، معهد ليفا، قم',
+                            7: 'معهد الجيوفيزياء، جامعة طهران',
                             8: 'منطقة الخليج',
                             9: 'الكويت',
                             10: 'قطر',
                             11: 'مجلس الأوقاف الإسلامية، سنغافورة',
                             12: 'الاتحاد الإسلامي الفرنسي',
-                            13: 'رئاسة الشؤون الدينية، تركيا (تجريبي)',
+                            13: 'رئاسة الشؤون الدينية، تركيا',
                             14: 'الإدارة الروحية لمسلمي روسيا',
                             15: 'لجنة مراقبة الهلال العالمية (Moonsighting.com)',
                             16: 'دبي (تجريبي)',
@@ -812,6 +930,7 @@
                 this.dom.settingsToggle.addEventListener('click', () => this.toggleSettingsMenu());
                 this.dom.saveSettings.addEventListener('click', () => this.saveSettings());
                 this.dom.resetSettings.addEventListener('click', () => this.resetSettings());
+                this.dom.refreshData.addEventListener('click', () => this.refreshData());
 
                 // Close settings menu when clicking outside
                 document.addEventListener('click', (e) => {
@@ -893,12 +1012,12 @@
                 } catch (error) {
                     return 'Unknown Location';
                 }
-            }            async fetchPrayerTimes() {
+            }            async fetchPrayerTimes(forceRefresh = false) {
                 if (!this.state.location) return;
 
                 const today = new Date().toDateString();
                 const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8); // Short hash
-                const cacheKey = `prayer-times-${this.state.location.lat}-${this.state.location.lng}-${today}-${this.state.calculationMethod}-${offsetsHash}`;
+                const cacheKey = `prayer-times-${this.state.location.lat}-${this.state.location.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
 
                 // Always check cache first
                 const cached = this.getFromCache(cacheKey);
@@ -914,9 +1033,9 @@
                     return;
                 }
 
-                // Rate limiting: don't make API calls too frequently
+                // Rate limiting: don't make API calls too frequently (unless forced refresh)
                 const now = Date.now();
-                if (this.state.lastApiCall && (now - this.state.lastApiCall) < this.config.rateLimitDelay) {
+                if (!forceRefresh && this.state.lastApiCall && (now - this.state.lastApiCall) < this.config.rateLimitDelay) {
                     console.log('Rate limit active, skipping API call');
                     return;
                 }
@@ -939,8 +1058,8 @@
                     const data = await response.json();
 
                     if (data.code === 200 && data.data && data.data.timings) {
-                        // Apply prayer time offsets
-                        this.state.prayerTimes = this.applyPrayerOffsets(data.data.timings);
+                        // Apply prayer time offsets and daylight saving
+                        this.state.prayerTimes = this.applyTimeAdjustments(data.data.timings);
                         this.state.lastFetchDate = today;
                         this.state.retryCount = 0; // Reset retry count on success
                         this.setCache(cacheKey, this.state.prayerTimes);
@@ -1118,16 +1237,20 @@
                 const settingsTitle = document.getElementById('settings-title');
                 const languageLabel = document.getElementById('language-label');
                 const calculationMethodLabel = document.getElementById('calculation-method-label');
+                const daylightSavingLabel = document.getElementById('daylight-saving-label');
                 const prayerAdjustmentsLabel = document.getElementById('prayer-adjustments-label');
                 const saveBtn = document.getElementById('save-settings');
                 const resetBtn = document.getElementById('reset-settings');
+                const refreshBtn = document.getElementById('refresh-data');
 
                 if (settingsTitle) settingsTitle.textContent = this.getText('settings');
                 if (languageLabel) languageLabel.textContent = this.getText('language') + ':';
                 if (calculationMethodLabel) calculationMethodLabel.textContent = this.getText('calculationMethod') + ':';
+                if (daylightSavingLabel) daylightSavingLabel.textContent = this.getText('daylightSaving') + ':';
                 if (prayerAdjustmentsLabel) prayerAdjustmentsLabel.textContent = this.getText('prayerTimeAdjustments') + ':';
                 if (saveBtn) saveBtn.textContent = this.getText('save');
                 if (resetBtn) resetBtn.textContent = this.getText('reset');
+                if (refreshBtn) refreshBtn.textContent = this.getText('refresh');
 
                 // Update prayer name labels in offset controls
                 const fajrLabel = document.getElementById('fajr-offset-label');
@@ -1159,6 +1282,21 @@
                         }
                     }
                 }
+
+                // Update daylight saving dropdown options
+                const daylightSavingSelect = document.getElementById('daylight-saving');
+                if (daylightSavingSelect) {
+                    const options = daylightSavingSelect.getElementsByTagName('option');
+                    if (options[0]) options[0].textContent = this.getText('dstNoAdjustment');
+                    if (options[1]) options[1].textContent = this.getText('dstAdd1Hour');
+                    if (options[2]) options[2].textContent = this.getText('dstSubtract1Hour');
+                }
+
+                // Update DST toggle labels
+                const dstOffLabel = document.getElementById('dst-off-label');
+                const dstOnLabel = document.getElementById('dst-on-label');
+                if (dstOffLabel) dstOffLabel.textContent = this.getText('dstOff');
+                if (dstOnLabel) dstOnLabel.textContent = this.getText('dstOn');
             }
 
             updateClockDisplay() {
@@ -1838,8 +1976,9 @@
             // Settings Menu Methods
             initializeSettingsUI() {
                 // Set current values in the UI
-                this.dom.languageSelect.value = this.state.language;
+                this.dom.languageToggle.checked = this.state.language === 'ar';
                 this.dom.calculationMethod.value = this.state.calculationMethod;
+                this.dom.dstToggle.checked = this.state.daylightSaving === 1;
 
                 // Set prayer offsets
                 this.dom.fajrOffset.value = this.state.prayerOffsets.Fajr;
@@ -1858,10 +1997,11 @@
                 this.dom.settingsPanel.classList.remove('show');
             }
 
-            saveSettings() {
+            async saveSettings() {
                 // Get values from UI
-                const newLanguage = this.dom.languageSelect.value;
+                const newLanguage = this.dom.languageToggle.checked ? 'ar' : 'en';
                 const newCalculationMethod = this.dom.calculationMethod.value;
+                const newDaylightSaving = this.dom.dstToggle.checked ? 1 : 0;
                 const newOffsets = {
                     Fajr: parseInt(this.dom.fajrOffset.value) || 0,
                     Sunrise: parseInt(this.dom.sunriseOffset.value) || 0,
@@ -1874,16 +2014,29 @@
                 // Check if settings have changed
                 const languageChanged = newLanguage !== this.state.language;
                 const methodChanged = newCalculationMethod !== this.state.calculationMethod;
+                const dstChanged = newDaylightSaving !== this.state.daylightSaving;
                 const offsetsChanged = JSON.stringify(newOffsets) !== JSON.stringify(this.state.prayerOffsets);
+
+                console.log('Settings change detection:', {
+                    languageChanged,
+                    methodChanged: methodChanged ? `${this.state.calculationMethod} -> ${newCalculationMethod}` : false,
+                    dstChanged,
+                    offsetsChanged
+                });
+
+                // Store old values for DST calculation before updating state
+                const oldDaylightSaving = this.state.daylightSaving;
 
                 // Update state
                 this.state.language = newLanguage;
                 this.state.calculationMethod = newCalculationMethod;
+                this.state.daylightSaving = newDaylightSaving;
                 this.state.prayerOffsets = newOffsets;
 
                 // Save to localStorage
                 localStorage.setItem('language', newLanguage);
                 localStorage.setItem('calculationMethod', newCalculationMethod);
+                localStorage.setItem('daylightSaving', newDaylightSaving.toString());
                 localStorage.setItem('prayerOffsets', JSON.stringify(newOffsets));
 
                 // Update UI if language changed
@@ -1894,13 +2047,90 @@
                     }
                 }
 
-                // Refresh prayer times if method changed or offsets changed
-                if (methodChanged || offsetsChanged) {
-                    // Clear cached prayer times for this location when method or offsets change
+                // Refresh prayer times if method, DST, or offsets changed
+                if (methodChanged || dstChanged || offsetsChanged) {
+                    // For immediate feedback with DST changes
+                    if (dstChanged && !methodChanged && !offsetsChanged && this.state.prayerTimes) {
+                        const newDstMinutes = newDaylightSaving === 1 ? 60 : 0;
+                        const oldDstMinutes = oldDaylightSaving === 1 ? 60 : 0; // Use old value
+                        const netAdjustment = newDstMinutes - oldDstMinutes;
+
+                        console.log(`DST Change: old=${oldDaylightSaving}, new=${newDaylightSaving}, adjustment=${netAdjustment} minutes`);
+
+                        if (netAdjustment !== 0) {
+                            // Apply the DST difference immediately to current prayer times
+                            const adjustedTimes = { ...this.state.prayerTimes };
+                            Object.keys(adjustedTimes).forEach(prayer => {
+                                if (adjustedTimes[prayer] && adjustedTimes[prayer].includes(':')) {
+                                    adjustedTimes[prayer] = this.adjustTimeByMinutes(adjustedTimes[prayer], netAdjustment);
+                                }
+                            });
+                            this.state.prayerTimes = adjustedTimes;
+
+                            // Immediately redraw the analog clock
+                            if (this.state.clockType === 'analog') {
+                                this.drawAnalogClock();
+                            }
+                        }
+                    }
+                    // For offset changes, immediately reapply all adjustments to existing times
+                    else if (offsetsChanged && !methodChanged && this.state.prayerTimes) {
+                        // Try to get original times from cache and reapply all adjustments
+                        const today = new Date().toDateString();
+                        const baseCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}`;
+
+                        // Look for any cached version for today with same method
+                        let originalTimes = null;
+                        for (const key of Object.keys(localStorage)) {
+                            if (key.startsWith(baseCacheKey)) {
+                                const cached = this.getFromCache(key);
+                                if (cached) {
+                                    originalTimes = cached;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (originalTimes) {
+                            // Reapply all adjustments with new offsets
+                            this.state.prayerTimes = this.applyTimeAdjustments(originalTimes);
+
+                            // Immediately redraw the analog clock
+                            if (this.state.clockType === 'analog') {
+                                this.drawAnalogClock();
+                            }
+                        }
+                    }
+
+                    // Clear cached prayer times and fetch fresh ones for consistency
                     this.clearPrayerTimesCache();
                     this.state.lastFetchDate = null; // Force refresh
+                    this.state.prayerTimes = null; // Clear current prayer times to force fetch
                     this.state.retryCount = 0;
-                    this.fetchPrayerTimes();
+
+                    // Always await for immediate display when method changes
+                    if (methodChanged) {
+                        console.log('Calculation method changed, fetching new prayer times...');
+                        await this.fetchPrayerTimes(true); // Force refresh bypassing rate limit
+                        console.log('New prayer times fetched, redrawing clock...');
+
+                        // Force immediate redraw for method changes
+                        if (this.state.clockType === 'analog') {
+                            this.drawAnalogClock();
+                        }
+                    } else {
+                        // For non-method changes, still force refresh if DST or offsets changed
+                        if (dstChanged || offsetsChanged) {
+                            this.fetchPrayerTimes(true); // Force refresh for DST/offset changes
+                        } else {
+                            this.fetchPrayerTimes(); // Normal fetch for other changes
+                        }
+
+                        // Still redraw if we applied immediate adjustments above
+                        if ((dstChanged || offsetsChanged) && this.state.clockType === 'analog') {
+                            this.drawAnalogClock();
+                        }
+                    }
                 }
 
                 // Close settings menu
@@ -1911,6 +2141,7 @@
                 // Reset to defaults
                 this.state.language = 'en';
                 this.state.calculationMethod = this.config.defaultCalculationMethod;
+                this.state.daylightSaving = 0;
                 this.state.prayerOffsets = {
                     Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0
                 };
@@ -1918,6 +2149,7 @@
                 // Update localStorage
                 localStorage.setItem('language', 'en');
                 localStorage.setItem('calculationMethod', this.config.defaultCalculationMethod);
+                localStorage.setItem('daylightSaving', '0');
                 localStorage.setItem('prayerOffsets', JSON.stringify(this.state.prayerOffsets));
 
                 // Update UI
@@ -1926,11 +2158,60 @@
 
                 // Force refresh prayer times
                 this.state.lastFetchDate = null;
+                this.state.prayerTimes = null;
                 this.state.retryCount = 0;
-                this.fetchPrayerTimes();
+                this.fetchPrayerTimes(true); // Force refresh bypassing rate limit
 
                 // Close settings menu
                 this.closeSettingsMenu();
+            }
+
+            async refreshData() {
+                try {
+                    // Show loading state
+                    const refreshBtn = document.getElementById('refresh-data');
+                    if (refreshBtn) {
+                        refreshBtn.disabled = true;
+                        refreshBtn.textContent = this.getText('loading').replace('...', '');
+                        // refreshBtn.style.transform = 'rotate(180deg)';
+                    }
+
+                    // Clear all prayer times cache
+                    this.clearPrayerTimesCache();
+                    this.state.lastFetchDate = null;
+                    this.state.prayerTimes = null;
+                    this.state.retryCount = 0;
+
+                    // Clear Hijri date cache
+                    const hijriKeys = Object.keys(localStorage).filter(key => key.startsWith('hijri-date-'));
+                    hijriKeys.forEach(key => localStorage.removeItem(key));
+                    this.state.hijriDate = null;
+                    this.state.lastHijriFetch = null;
+
+                    // Force refresh both prayer times and Hijri date
+                    console.log('Manual refresh: Fetching fresh prayer times and Hijri date...');
+                    await Promise.all([
+                        this.fetchPrayerTimes(true),
+                        this.fetchHijriDate()
+                    ]);
+
+                    // Force redraw
+                    if (this.state.clockType === 'analog') {
+                        this.drawAnalogClock();
+                    }
+
+                    console.log('Manual refresh completed successfully');
+                } catch (error) {
+                    console.error('Error during manual refresh:', error);
+                } finally {
+                    // Restore button state
+                    const refreshBtn = document.getElementById('refresh-data');
+                    if (refreshBtn) {
+                        refreshBtn.disabled = false;
+                        refreshBtn.textContent = this.getText('refresh');
+                        // refreshBtn.style.transform = 'rotate(0deg)';
+                    }
+                }
             }
 
             // Convert Western numerals to Arabic-Indic numerals
@@ -1939,10 +2220,11 @@
                 return num.toString().replace(/\d/g, digit => arabicNumerals[parseInt(digit)]);
             }
 
-            // Apply prayer time offsets
-            applyPrayerOffsets(prayerTimes) {
+            // Apply prayer time offsets and daylight saving adjustment
+            applyTimeAdjustments(prayerTimes) {
                 const adjustedTimes = { ...prayerTimes };
 
+                // Apply prayer-specific offsets
                 Object.keys(this.state.prayerOffsets).forEach(prayer => {
                     if (adjustedTimes[prayer]) {
                         const offset = this.state.prayerOffsets[prayer];
@@ -1951,6 +2233,16 @@
                         }
                     }
                 });
+
+                // Apply daylight saving adjustment to all prayer times
+                if (this.state.daylightSaving === 1) {
+                    const dstMinutes = 60; // Add 1 hour
+                    Object.keys(adjustedTimes).forEach(prayer => {
+                        if (adjustedTimes[prayer] && adjustedTimes[prayer].includes(':')) {
+                            adjustedTimes[prayer] = this.adjustTimeByMinutes(adjustedTimes[prayer], dstMinutes);
+                        }
+                    });
+                }
 
                 return adjustedTimes;
             }
@@ -2016,7 +2308,7 @@
                     }
 
                     this.dom.hijriDate.textContent = hijriText;
-                    console.log('Hijri date displayed:', hijriText);
+                    // console.log('Hijri date displayed:', hijriText);
                 } else {
                     console.log('Hijri date incomplete or missing, not updating display');
                 }
