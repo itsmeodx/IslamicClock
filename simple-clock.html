@@ -743,6 +743,14 @@
                     { name: 'Sunrise', nameAr: 'الشروق', degree: 270, color: '#ff9800' }
                 ];
 
+                // Minor time markers (fixed positions relative to midnight at 180°)
+                // First third of night: 60° before midnight (180° - 60° = 120°)
+                // Last third of night: 60° after midnight (180° + 60° = 240°, but Fajr is already there, so use 210°)
+                this.minorTimeMarkers = [
+                    { name: 'Firstthird', nameAr: 'الثلث الأول', color: '#95a5a6', isMinor: true, degree: 135 }, // First third - between Isha and Midnight
+                    { name: 'Lastthird', nameAr: 'الثلث الأخير', color: '#7f8c8d', isMinor: true, degree: 210 } // Last third - between Midnight and Fajr
+                ];
+
                 // Hijri month names (1-12)
                 this.hijriMonths = {
                     en: ['Muḥarram', 'Ṣafar', 'Rabīʿ al-awwal', 'Rabīʿ al-thānī', 'Jumādā al-awwal', 'Jumādā al-thānī', 'Rajab', 'Shaʿbān', 'Ramaḍān', 'Shawwāl', 'Dhū al-Qaʿdah', 'Dhū al-Ḥijjah'],
@@ -787,6 +795,7 @@
                         // Settings menu translations
                         settings: 'Settings',
                         language: 'Language',
+
                         calculationMethod: 'Calculation Method',
                         daylightSaving: 'Daylight Saving Time',
                         dstMinus1Hour: '-1 Hour',
@@ -1230,12 +1239,59 @@
             toggleLanguage() {
                 this.state.language = this.state.language === 'en' ? 'ar' : 'en';
                 localStorage.setItem('language', this.state.language);
-                this.updateLanguageDisplay();
+
+                // Update only essential UI elements immediately
+                this.updateEssentialLanguageElements();
+
                 // Update Hijri date display with new language
                 if (this.state.hijriDate) {
                     this.updateHijriDate();
                 }
-            }            updateLanguageDisplay() {
+
+                // Clear canvas cache and force complete redraw for analog clock
+                if (this.state.clockType === 'analog') {
+                    this.state.canvasCache = null;
+                    this.state.forceRedraw = true;
+                    // Use setTimeout to ensure the language state is fully updated before redraw
+                    setTimeout(() => {
+                        this.drawAnalogClock();
+                    }, 0);
+                }
+
+                // Defer non-critical updates to avoid blocking
+                setTimeout(() => {
+                    this.updateSettingsMenuText();
+                }, 10);
+            }
+
+            updateEssentialLanguageElements() {
+                // Update only the most critical elements immediately for fast response
+
+                // Update HTML lang attribute and text direction
+                document.documentElement.lang = this.state.language;
+                if (this.state.language === 'ar') {
+                    document.documentElement.setAttribute('dir', 'rtl');
+                    document.body.style.textAlign = 'right';
+                } else {
+                    document.documentElement.setAttribute('dir', 'ltr');
+                    document.body.style.textAlign = 'left';
+                }
+
+                // Update toggle button text
+                const isAnalog = this.state.clockType === 'analog';
+                this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
+
+                // Update main title
+                const clockTitle = document.querySelector('.clock-title');
+                if (clockTitle) {
+                    clockTitle.textContent = this.getText('title');
+                }
+
+                // Update page title
+                document.title = this.getText('title');
+            }
+
+            updateLanguageDisplay() {
                 // Update page title
                 document.title = this.getText('title');
 
@@ -1699,7 +1755,35 @@
                 this.ctx.restore();
             }
 
+            calculateMinorMarkerPositions() {
+                if (!this.state.prayerTimes) return [];
+
+                const minorMarkers = [];
+
+                this.minorTimeMarkers.forEach(marker => {
+                    if (this.state.prayerTimes[marker.name]) {
+                        const time = this.state.prayerTimes[marker.name];
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const totalMinutes = hours * 60 + minutes;
+
+                        // Convert time to degrees (24 hours = 360 degrees)
+                        // 0 degrees = noon (12:00), so adjust accordingly
+                        const degree = ((totalMinutes - 12 * 60) * 360 / (24 * 60)) % 360;
+                        const adjustedDegree = degree < 0 ? degree + 360 : degree;
+
+                        minorMarkers.push({
+                            ...marker,
+                            degree: adjustedDegree,
+                            time: time
+                        });
+                    }
+                });
+
+                return minorMarkers;
+            }
+
             drawPrayerMarkers(centerX, centerY, radius) {
+                // Draw main prayer markers
                 this.prayerPositions.forEach((prayer) => {
                     const angle = (prayer.degree - 90) * Math.PI / 180;
                     const markerRadius = radius - 50; // Adjusted for larger canvas
@@ -1752,7 +1836,11 @@
                     }
 
                     // Arabic name with elegant styling - positioned inside with better spacing
-                    const arabicRadius = radius - 85;
+                    // Adjust positioning for Dhuhr and Midnight to be closer to their markers
+                    let arabicRadius = radius - 85;
+                    if (prayer.name === 'Dhuhr' || prayer.name === 'Midnight') {
+                        arabicRadius = radius - 70; // Move closer to marker (was 85, now 70)
+                    }
                     const arabicX = centerX + Math.cos(angle) * arabicRadius;
                     const arabicY = centerY + Math.sin(angle) * arabicRadius;
 
@@ -1765,6 +1853,53 @@
                     const prayerName = this.state.language === 'ar' ? prayer.nameAr : (this.getText('prayers')[prayer.name] || prayer.name);
                     this.ctx.strokeText(prayerName, arabicX, arabicY);
                     this.ctx.fillText(prayerName, arabicX, arabicY);
+                });
+
+                // Draw minor markers (Firstthird and Lastthird) with fixed positions
+                this.minorTimeMarkers.forEach((marker) => {
+                    const angle = (marker.degree - 90) * Math.PI / 180;
+
+                    // Position minor markers at the same radius as prayer markers
+                    const markerRadius = radius - 50; // Same position as main prayer markers
+                    const x = centerX + Math.cos(angle) * markerRadius;
+                    const y = centerY + Math.sin(angle) * markerRadius;
+
+                    this.ctx.save();
+
+                    // Smaller minor marker circle with distinct style
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 5, 0, 2 * Math.PI);
+
+                    // Use marker color with slight transparency
+                    this.ctx.fillStyle = marker.color;
+                    this.ctx.fill();
+
+                    this.ctx.strokeStyle = '#ffffff';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+
+                    // Smaller inner highlight
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 2.5, 0, 2 * Math.PI);
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    this.ctx.fill();
+
+                    this.ctx.restore();
+
+                    // Minor marker name - positioned closer to markers but with proper spacing
+                    const nameRadius = radius - 75; // Balanced position between markers and prayer names
+                    const nameX = centerX + Math.cos(angle) * nameRadius;
+                    const nameY = centerY + Math.sin(angle) * nameRadius;
+
+                    this.ctx.fillStyle = marker.color;
+                    this.ctx.font = 'bold 8px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                    this.ctx.lineWidth = 0.5;
+                    const markerName = this.state.language === 'ar' ? marker.nameAr : marker.name;
+                    this.ctx.strokeText(markerName, nameX, nameY);
+                    this.ctx.fillText(markerName, nameX, nameY);
                 });
             }
 
@@ -2086,6 +2221,11 @@
                     }
                     // Clear canvas cache when language changes to regenerate gradients
                     this.state.canvasCache = null;
+                    // Force immediate redraw of analog clock for language change
+                    if (this.state.clockType === 'analog') {
+                        this.state.forceRedraw = true;
+                        this.drawAnalogClock();
+                    }
                 }
 
                 // Refresh prayer times if method, DST, or offsets changed
