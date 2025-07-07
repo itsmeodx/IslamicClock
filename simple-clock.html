@@ -45,13 +45,6 @@
             pointer-events: none;
         }
 
-        @keyframes arabianGlow {
-            0%, 100% { background-position: 0% 0%; }
-            25% { background-position: 100% 0%; }
-            50% { background-position: 100% 100%; }
-            75% { background-position: 0% 100%; }
-        }
-
         .clock-container {
             background: #ffffff;
             backdrop-filter: blur(10px);
@@ -75,11 +68,6 @@
             border: 1px solid #d4af37;
             border-radius: 15px;
             pointer-events: none;
-        }
-
-        @keyframes islamicPattern {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .islamic-decoration {
@@ -697,7 +685,6 @@
                     prayerOffsets: JSON.parse(localStorage.getItem('prayerOffsets') || '{"Fajr":0,"Sunrise":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0}'),
                     prayerTimes: null,
                     location: null,
-                    lastUpdate: null,
                     animationId: null,
                     lastFetchDate: null, // Track last fetch date
                     isInitialized: false, // Track if initial setup is complete
@@ -705,7 +692,12 @@
                     retryCount: 0, // Track API retry attempts
                     hijriDate: null, // Store Hijri date
                     lastHijriFetch: null, // Track last Hijri date fetch
-                    lastHijriAttempt: null // Track last Hijri fetch attempt
+                    lastHijriAttempt: null, // Track last Hijri fetch attempt
+                    // Performance optimization variables
+                    lastMinute: null, // Track last minute for redraw optimization
+                    lastHour: null, // Track last hour for redraw optimization
+                    forceRedraw: false, // Force redraw flag
+                    canvasCache: null // Cache for expensive canvas operations
                 };
 
                 // DOM Elements (cached)
@@ -745,7 +737,7 @@
                     { name: 'Dhuhr', nameAr: 'الظهر', degree: 0, color: '#2ecc71' },
                     { name: 'Asr', nameAr: 'العصر', degree: 60, color: '#f39c12' },
                     { name: 'Maghrib', nameAr: 'المغرب', degree: 90, color: '#e74c3c' },
-                    { name: 'Isha', nameAr: 'العشاء', degree: 150, color: '#9b59b6' },
+                    { name: 'Isha', nameAr: 'العشاء', degree: 120, color: '#9b59b6' },
                     { name: 'Midnight', nameAr: 'منتصف الليل', degree: 180, color: '#34495e' },
                     { name: 'Fajr', nameAr: 'الفجر', degree: 240, color: '#3498db' },
                     { name: 'Sunrise', nameAr: 'الشروق', degree: 270, color: '#ff9800' }
@@ -774,15 +766,10 @@
                         gettingLocation: '📍 Getting location...',
                         hijriLoading: '🌙 Loading...',
                         hijriError: '🌙 Failed to load Hijri date',
-                        locationError: '📍 Location unavailable',
-                        prayerTimesError: 'Prayer times unavailable',
                         nextPrayer: 'Next',
                         remaining: 'remaining',
                         complete: 'Complete',
                         defaultLocation: 'Mecca, Saudi Arabia',
-                        currentTime: 'Current Time',
-                        currentDate: 'Current Date',
-                        prayerTimes: 'Prayer Times',
                         // Weekdays for digital display
                         weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
                         // Months for digital display
@@ -848,15 +835,10 @@
                         gettingLocation: '📍 جاري تحديد الموقع...',
                         hijriLoading: '🌙 جاري التحميل...',
                         hijriError: '🌙 فشل في تحميل التاريخ الهجري',
-                        locationError: '📍 الموقع غير متاح',
-                        prayerTimesError: 'أوقات الصلاة غير متاحة',
                         nextPrayer: 'التالي',
                         remaining: 'متبقي',
                         complete: 'مكتمل',
                         defaultLocation: 'مكة المكرمة، السعودية',
-                        currentTime: 'الوقت الحالي',
-                        currentDate: 'التاريخ الحالي',
-                        prayerTimes: 'أوقات الصلاة',
                         // Weekdays for digital display
                         weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
                         // Months for digital display
@@ -968,6 +950,7 @@
                 // Handle window resize for responsive canvas
                 window.addEventListener('resize', this.debounce(() => {
                     if (this.state.clockType === 'analog') {
+                        this.state.forceRedraw = true;
                         this.drawAnalogClock();
                     }
                 }, 250));
@@ -1155,24 +1138,17 @@
                     const hijriCacheKey = `hijri-date-${today}`;
                     this.setCache(hijriCacheKey, this.state.hijriDate);
                     this.updateHijriDate();
-                    console.log('Hijri date extracted from prayer times API:', this.state.hijriDate);
                 } catch (error) {
                     console.error('Error processing Hijri date from API:', error);
                 }
             }
 
-            getDefaultPrayerTimes() {
-                // No longer used - always rely on API data or cache
-                return null;
-            }
+
 
             async fetchHijriDate() {
                 const today = new Date().toDateString();
                 const cacheKey = `hijri-date-${today}`;
 
-                console.log('Fetching Hijri date for:', today);
-
-                // Skip cache for now to ensure fresh data
                 console.log('Fetching Hijri date...');
 
                 // Check for any existing Hijri cache as fallback
@@ -1190,7 +1166,6 @@
                     const dateString = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()}`;
                     const url = `https://api.aladhan.com/v1/gToH/${dateString}`;
 
-                    console.log('Fetching Hijri date from:', url);
                     const response = await fetch(url);
 
                     if (!response.ok) {
@@ -1199,7 +1174,7 @@
 
                     const data = await response.json();
 
-                    console.log('Hijri API response:', data);                    if (data.code === 200 && data.data && data.data.hijri) {
+                    if (data.code === 200 && data.data && data.data.hijri) {
                         const hijriData = data.data.hijri;
 
                         // Get month index (1-12) and convert to array index (0-11)
@@ -1227,7 +1202,6 @@
                         this.state.lastHijriFetch = today;
                         this.setCache(cacheKey, this.state.hijriDate);
                         this.updateHijriDate();
-                        console.log('Hijri date fetched successfully:', this.state.hijriDate);
                     } else {
                         console.error('Invalid Hijri API response structure:', data);
                         throw new Error('Invalid Hijri API response');
@@ -1248,6 +1222,8 @@
             toggleClockType() {
                 this.state.clockType = this.state.clockType === 'digital' ? 'analog' : 'digital';
                 localStorage.setItem('clockType', this.state.clockType);
+                // Clear canvas cache when switching modes
+                this.state.canvasCache = null;
                 this.updateClockDisplay();
             }
 
@@ -1311,8 +1287,8 @@
                 const progressSectionLabel = document.getElementById('progress-section-label');
                 const prayerAdjustmentsLabel = document.getElementById('prayer-adjustments-label');
                 const saveBtn = document.getElementById('save-settings');
-                const resetBtn = document.getElementById('reset-settings');
-                const refreshBtn = document.getElementById('refresh-data');
+                const resetBtn = this.dom.resetSettings;
+                const refreshBtn = this.dom.refreshData;
 
                 if (settingsTitle) settingsTitle.textContent = this.getText('settings');
                 if (languageLabel) languageLabel.textContent = this.getText('language') + ':';
@@ -1324,7 +1300,7 @@
                 if (resetBtn) resetBtn.textContent = this.getText('reset');
                 if (refreshBtn) refreshBtn.textContent = this.getText('refresh');
 
-                // Update prayer name labels in offset controls
+                // Update calculation method dropdown options
                 const fajrLabel = document.getElementById('fajr-offset-label');
                 const sunriseLabel = document.getElementById('sunrise-offset-label');
                 const dhuhrLabel = document.getElementById('dhuhr-offset-label');
@@ -1340,7 +1316,7 @@
                 if (ishaLabel) ishaLabel.textContent = this.getText('prayers').Isha + ':';
 
                 // Update calculation method dropdown options
-                const calculationMethodSelect = document.getElementById('calculation-method');
+                const calculationMethodSelect = this.dom.calculationMethod;
                 if (calculationMethodSelect) {
                     const currentValue = calculationMethodSelect.value;
                     const options = calculationMethodSelect.getElementsByTagName('option');
@@ -1356,7 +1332,7 @@
                 }
 
                 // Update daylight saving dropdown options
-                const daylightSavingSelect = document.getElementById('dst-select');
+                const daylightSavingSelect = this.dom.dstSelect;
                 if (daylightSavingSelect) {
                     const options = daylightSavingSelect.getElementsByTagName('option');
                     if (options[0]) options[0].textContent = this.getText('dstMinus1Hour');
@@ -1379,6 +1355,8 @@
                 this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
 
                 if (isAnalog) {
+                    // Force redraw when switching to analog mode
+                    this.state.forceRedraw = true;
                     this.drawAnalogClock();
                 }
             }
@@ -1398,13 +1376,14 @@
 
             updateTime() {
                 const now = new Date();
+                const currentMinute = now.getMinutes();
+                const currentHour = now.getHours();
 
                 // Check if we need to refresh prayer times (new day)
                 this.checkForNewDay();
 
                 // Update digital display
                 const timeString = this.formatTime(now);
-
                 this.dom.timeDisplay.textContent = timeString;
                 this.dom.dateDisplay.textContent = this.formatDate(now);
 
@@ -1413,9 +1392,18 @@
                     this.updateHijriDate();
                 }
 
-                // Update analog display if visible
+                // Optimize analog display updates - only redraw when minute changes or when forced
                 if (this.state.clockType === 'analog') {
-                    this.drawAnalogClock();
+                    // Only redraw if minute changed or if this is the first update
+                    const minuteChanged = this.state.lastMinute !== currentMinute;
+                    const hourChanged = this.state.lastHour !== currentHour;
+
+                    if (minuteChanged || hourChanged || this.state.forceRedraw || !this.state.lastMinute) {
+                        this.drawAnalogClock();
+                        this.state.lastMinute = currentMinute;
+                        this.state.lastHour = currentHour;
+                        this.state.forceRedraw = false;
+                    }
                 }
             }
 
@@ -1498,7 +1486,7 @@
                 const centerY = canvas.height / 2;
                 const radius = Math.min(centerX, centerY - 25) - 50; // Adjusted for taller canvas
 
-                // Clear canvas
+                // Clear canvas efficiently
                 this.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Calculate square border dimensions - make it more rectangular
@@ -1507,12 +1495,24 @@
                 const squareX = centerX - squareWidth / 2;
                 const squareY = 10; // Small margin from top
 
+                // Draw static elements (these don't change frequently)
+                this.drawStaticElements(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
+
+                // Draw dynamic elements (these change based on time and prayer progress)
+                this.drawDynamicElements(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
+            }
+
+            drawStaticElements(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight) {
                 // Draw outer square border with Bismillah
                 this.drawSquareBorder(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
 
                 // Draw clock face
                 this.drawClockFace(centerX, centerY, radius);
                 this.drawPrayerMarkers(centerX, centerY, radius);
+            }
+
+            drawDynamicElements(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight) {
+                // Draw prayer progress hand and center circle
                 this.drawClockHands(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight);
                 this.drawCenterCircle(centerX, centerY);
             }
@@ -1581,28 +1581,37 @@
             }
 
             drawClockFace(centerX, centerY, radius) {
+                // Use cached gradients if available, otherwise create them
+                if (!this.state.canvasCache) {
+                    this.state.canvasCache = {};
+                }
+
                 // Outer decorative border with Arabian theme colors
-                const outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
-                outerGradient.addColorStop(0, '#daa520');
-                outerGradient.addColorStop(0.5, '#cd853f');
-                outerGradient.addColorStop(1, '#8b4513');
+                if (!this.state.canvasCache.outerGradient) {
+                    this.state.canvasCache.outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
+                    this.state.canvasCache.outerGradient.addColorStop(0, '#daa520');
+                    this.state.canvasCache.outerGradient.addColorStop(0.5, '#cd853f');
+                    this.state.canvasCache.outerGradient.addColorStop(1, '#8b4513');
+                }
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
-                this.ctx.fillStyle = outerGradient;
+                this.ctx.fillStyle = this.state.canvasCache.outerGradient;
                 this.ctx.fill();
 
                 // Main clock face with warm Arabian gradient
-                const mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-                mainGradient.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
-                mainGradient.addColorStop(0.3, 'rgba(250, 240, 210, 0.95)');
-                mainGradient.addColorStop(0.7, 'rgba(245, 222, 179, 0.9)');
-                mainGradient.addColorStop(0.9, 'rgba(238, 203, 173, 0.85)');
-                mainGradient.addColorStop(1, 'rgba(222, 184, 135, 0.8)');
+                if (!this.state.canvasCache.mainGradient) {
+                    this.state.canvasCache.mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                    this.state.canvasCache.mainGradient.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
+                    this.state.canvasCache.mainGradient.addColorStop(0.3, 'rgba(250, 240, 210, 0.95)');
+                    this.state.canvasCache.mainGradient.addColorStop(0.7, 'rgba(245, 222, 179, 0.9)');
+                    this.state.canvasCache.mainGradient.addColorStop(0.9, 'rgba(238, 203, 173, 0.85)');
+                    this.state.canvasCache.mainGradient.addColorStop(1, 'rgba(222, 184, 135, 0.8)');
+                }
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                this.ctx.fillStyle = mainGradient;
+                this.ctx.fillStyle = this.state.canvasCache.mainGradient;
                 this.ctx.fill();
 
                 // Elegant border with Arabian brown
@@ -1610,22 +1619,21 @@
                 this.ctx.lineWidth = 4;
                 this.ctx.stroke();
 
-                // Inner decorative circles with Arabian gold tones
-                for (let i = 1; i <= 3; i++) {
+                // Inner decorative circles with Arabian gold tones (simplified)
+                this.ctx.strokeStyle = 'rgba(218, 165, 32, 0.3)';
+                this.ctx.lineWidth = 1;
+                for (let i = 1; i <= 2; i++) { // Reduced from 3 to 2 circles
                     this.ctx.beginPath();
-                    this.ctx.arc(centerX, centerY, radius - (i * 12), 0, 2 * Math.PI);
-                    this.ctx.strokeStyle = `rgba(218, 165, 32, ${0.4 - i * 0.1})`;
-                    this.ctx.lineWidth = 1;
+                    this.ctx.arc(centerX, centerY, radius - (i * 18), 0, 2 * Math.PI);
                     this.ctx.stroke();
                 }
 
-                // Subtle hour markers with Arabian brown
+                // Simplified hour markers
                 this.ctx.strokeStyle = 'rgba(139, 69, 19, 0.4)';
                 this.ctx.lineWidth = 1;
-                for (let i = 0; i < 24; i++) {
-                    const angle = (i * 15) * Math.PI / 180;
-                    const isMainHour = i % 6 === 0;
-                    const startRadius = radius - (isMainHour ? 20 : 12);
+                for (let i = 0; i < 12; i += 3) { // Only show 4 main markers instead of 24
+                    const angle = (i * 30) * Math.PI / 180; // 30 degrees for each main hour
+                    const startRadius = radius - 20;
                     const endRadius = radius - 3;
 
                     this.ctx.beginPath();
@@ -1637,27 +1645,30 @@
                         centerX + Math.cos(angle) * endRadius,
                         centerY + Math.sin(angle) * endRadius
                     );
-                    this.ctx.lineWidth = isMainHour ? 2 : 1;
+                    this.ctx.lineWidth = 2;
                     this.ctx.stroke();
                 }
 
-                // Add Islamic geometric pattern in center
+                // Add Islamic geometric pattern in center (simplified)
                 this.drawIslamicGeometry(centerX, centerY, 35);
             }
 
             drawIslamicGeometry(centerX, centerY, size) {
-                // 8-pointed star (Khatam) with Arabian theme colors
+                // Simplified 8-pointed star (Khatam) with Arabian theme colors
                 this.ctx.save();
 
-                // Outer star with gradient using Arabian gold
-                const starGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
-                starGradient.addColorStop(0, 'rgba(218, 165, 32, 0.9)');
-                starGradient.addColorStop(0.7, 'rgba(205, 133, 63, 0.6)');
-                starGradient.addColorStop(1, 'rgba(139, 69, 19, 0.3)');
+                // Use cached gradient if available
+                if (!this.state.canvasCache.starGradient) {
+                    this.state.canvasCache.starGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
+                    this.state.canvasCache.starGradient.addColorStop(0, 'rgba(218, 165, 32, 0.9)');
+                    this.state.canvasCache.starGradient.addColorStop(0.7, 'rgba(205, 133, 63, 0.6)');
+                    this.state.canvasCache.starGradient.addColorStop(1, 'rgba(139, 69, 19, 0.3)');
+                }
 
+                // Simplified star shape with fewer points for better performance
                 this.ctx.beginPath();
-                for (let i = 0; i < 16; i++) {
-                    const angle = (i * 22.5) * Math.PI / 180;
+                for (let i = 0; i < 8; i++) { // Reduced from 16 to 8 points
+                    const angle = (i * 45) * Math.PI / 180;
                     const radius = i % 2 === 0 ? size * 0.8 : size * 0.4;
                     const x = centerX + Math.cos(angle) * radius;
                     const y = centerY + Math.sin(angle) * radius;
@@ -1669,7 +1680,8 @@
                     }
                 }
                 this.ctx.closePath();
-                this.ctx.fillStyle = starGradient;
+
+                this.ctx.fillStyle = this.state.canvasCache.starGradient;
                 this.ctx.fill();
                 this.ctx.strokeStyle = '#8b4513';
                 this.ctx.lineWidth = 2;
@@ -1688,35 +1700,23 @@
             }
 
             drawPrayerMarkers(centerX, centerY, radius) {
-                this.prayerPositions.forEach((prayer, index) => {
+                this.prayerPositions.forEach((prayer) => {
                     const angle = (prayer.degree - 90) * Math.PI / 180;
                     const markerRadius = radius - 50; // Adjusted for larger canvas
                     const x = centerX + Math.cos(angle) * markerRadius;
                     const y = centerY + Math.sin(angle) * markerRadius;
 
-                    // Enhanced prayer marker with glow effect
+                    // Simplified prayer marker (removed glow effect for performance)
                     this.ctx.save();
-
-                    // Glow effect
-                    this.ctx.shadowColor = prayer.color;
-                    this.ctx.shadowBlur = 10;
-                    this.ctx.shadowOffsetX = 0;
-                    this.ctx.shadowOffsetY = 0;
 
                     // Main prayer marker circle (scaled up)
                     this.ctx.beginPath();
                     this.ctx.arc(x, y, 10, 0, 2 * Math.PI);
 
-                    // Gradient for prayer marker
-                    const markerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, 10);
-                    markerGradient.addColorStop(0, prayer.color);
-                    markerGradient.addColorStop(0.7, prayer.color);
-                    markerGradient.addColorStop(1, this.darkenColor(prayer.color, 20));
-
-                    this.ctx.fillStyle = markerGradient;
+                    // Simplified solid color instead of gradient
+                    this.ctx.fillStyle = prayer.color;
                     this.ctx.fill();
 
-                    this.ctx.shadowBlur = 0;
                     this.ctx.strokeStyle = '#ffffff';
                     this.ctx.lineWidth = 2;
                     this.ctx.stroke();
@@ -1768,16 +1768,7 @@
                 });
             }
 
-            darkenColor(color, percent) {
-                const num = parseInt(color.replace("#", ""), 16);
-                const amt = Math.round(2.55 * percent);
-                const R = (num >> 16) - amt;
-                const G = (num >> 8 & 0x00FF) - amt;
-                const B = (num & 0x0000FF) - amt;
-                return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-                    (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-                    (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
-            }
+
 
             drawClockHands(centerX, centerY, radius, squareX, squareY, squareWidth, squareHeight) {
                 const prayerProgress = this.getPrayerProgress();
@@ -1786,34 +1777,18 @@
                 if (prayerProgress) {
                     const progressAngle = (prayerProgress.progressDegree - 90) * Math.PI / 180;
 
-                    // Enhanced main hand with elegant design
+                    // Simplified main hand design (removed shadow for performance)
                     this.ctx.save();
 
-                    // Hand shadow for depth
-                    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-                    this.ctx.shadowBlur = 8;
-                    this.ctx.shadowOffsetX = 2;
-                    this.ctx.shadowOffsetY = 2;
-
-                    // Main hand body with gradient
+                    // Main hand body with solid color instead of gradient
                     const handLength = radius * 0.75;
                     const handWidth = 8;
-
-                    // Create gradient for the hand with Arabian theme colors
-                    const handGradient = this.ctx.createLinearGradient(
-                        centerX, centerY,
-                        centerX + Math.cos(progressAngle) * handLength,
-                        centerY + Math.sin(progressAngle) * handLength
-                    );
-                    handGradient.addColorStop(0, '#8b4513');
-                    handGradient.addColorStop(0.5, '#cd853f');
-                    handGradient.addColorStop(1, '#daa520');
 
                     // Draw the main hand with tapered design
                     this.ctx.beginPath();
                     this.ctx.lineWidth = handWidth;
                     this.ctx.lineCap = 'round';
-                    this.ctx.strokeStyle = handGradient;
+                    this.ctx.strokeStyle = '#cd853f'; // Solid color instead of gradient
                     this.ctx.moveTo(centerX, centerY);
                     this.ctx.lineTo(
                         centerX + Math.cos(progressAngle) * handLength,
@@ -1825,7 +1800,6 @@
                     const tipX = centerX + Math.cos(progressAngle) * handLength;
                     const tipY = centerY + Math.sin(progressAngle) * handLength;
 
-                    this.ctx.shadowBlur = 0;
                     this.ctx.beginPath();
                     this.ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
                     this.ctx.fillStyle = '#daa520';
@@ -1881,33 +1855,19 @@
 
 
 
-            drawHand(centerX, centerY, angle, length, width, color) {
-                this.ctx.beginPath();
-                this.ctx.lineWidth = width;
-                this.ctx.lineCap = 'round';
-                this.ctx.strokeStyle = color;
-                this.ctx.moveTo(centerX, centerY);
-                this.ctx.lineTo(
-                    centerX + Math.cos(angle) * length,
-                    centerY + Math.sin(angle) * length
-                );
-                this.ctx.stroke();
-            }
+
 
             drawCenterCircle(centerX, centerY) {
-                // Enhanced center circle with Arabian theme colors (scaled up)
+                // Simplified center circle with Arabian theme colors (removed shadows for performance)
                 this.ctx.save();
 
-                // Outer ring with glow using Arabian theme
-                this.ctx.shadowColor = 'rgba(218, 165, 32, 0.7)';
-                this.ctx.shadowBlur = 25;
+                // Outer ring using Arabian theme
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 18, 0, 2 * Math.PI);
                 this.ctx.fillStyle = '#8b4513';
                 this.ctx.fill();
 
                 // Middle ring with Arabian theme
-                this.ctx.shadowBlur = 0;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 14, 0, 2 * Math.PI);
                 this.ctx.fillStyle = '#daa520';
@@ -1916,14 +1876,19 @@
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
-                // Inner highlight circle with Arabian theme
+                // Inner highlight circle with simplified gradient
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
-                const centerGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
-                centerGradient.addColorStop(0, 'rgba(255, 248, 220, 0.9)');
-                centerGradient.addColorStop(0.7, 'rgba(218, 165, 32, 0.7)');
-                centerGradient.addColorStop(1, 'rgba(139, 69, 19, 0.9)');
-                this.ctx.fillStyle = centerGradient;
+
+                // Use cached gradient if available
+                if (!this.state.canvasCache.centerGradient) {
+                    this.state.canvasCache.centerGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
+                    this.state.canvasCache.centerGradient.addColorStop(0, 'rgba(255, 248, 220, 0.9)');
+                    this.state.canvasCache.centerGradient.addColorStop(0.7, 'rgba(218, 165, 32, 0.7)');
+                    this.state.canvasCache.centerGradient.addColorStop(1, 'rgba(139, 69, 19, 0.9)');
+                }
+
+                this.ctx.fillStyle = this.state.canvasCache.centerGradient;
                 this.ctx.fill();
 
                 // Islamic symbol in center with Arabian theme
@@ -2119,6 +2084,8 @@
                     if (this.state.hijriDate) {
                         this.updateHijriDate();
                     }
+                    // Clear canvas cache when language changes to regenerate gradients
+                    this.state.canvasCache = null;
                 }
 
                 // Refresh prayer times if method, DST, or offsets changed
@@ -2203,11 +2170,13 @@
 
                         // Force immediate redraw for method changes
                         if (this.state.clockType === 'analog') {
+                            this.state.forceRedraw = true;
                             this.drawAnalogClock();
                         }
                     } else {
                         // For DST and offset changes, just redraw with the adjusted times we already computed above
                         if ((dstChanged || offsetsChanged) && this.state.clockType === 'analog') {
+                            this.state.forceRedraw = true;
                             this.drawAnalogClock();
                         }
                     }
@@ -2215,6 +2184,7 @@
 
                 // Redraw analog clock if progress toggle changed
                 if (progressChanged && this.state.clockType === 'analog') {
+                    this.state.forceRedraw = true;
                     this.drawAnalogClock();
                 }
 
@@ -2256,10 +2226,9 @@
             async refreshData() {
                 try {
                     // Show loading state
-                    const refreshBtn = document.getElementById('refresh-data');
-                    if (refreshBtn) {
-                        refreshBtn.disabled = true;
-                        refreshBtn.textContent = this.getText('loading').replace('...', '');
+                    if (this.dom.refreshData) {
+                        this.dom.refreshData.disabled = true;
+                        this.dom.refreshData.textContent = this.getText('loading').replace('...', '');
                     }
 
                     // Clear all prayer times cache
@@ -2294,10 +2263,9 @@
                     console.error('Error during manual refresh:', error);
                 } finally {
                     // Restore button state
-                    const refreshBtn = document.getElementById('refresh-data');
-                    if (refreshBtn) {
-                        refreshBtn.disabled = false;
-                        refreshBtn.textContent = this.getText('refresh');
+                    if (this.dom.refreshData) {
+                        this.dom.refreshData.disabled = false;
+                        this.dom.refreshData.textContent = this.getText('refresh');
                     }
                 }
             }
@@ -2396,11 +2364,9 @@
                     }
 
                     this.dom.hijriDate.textContent = hijriText;
-                    // console.log('Hijri date displayed:', hijriText);
                 } else {
                     console.log('Hijri date incomplete or missing, not updating display');
                 }
-                // Only show Hijri date from API/cache - no fallback calculation
             }
 
             getAnyHijriCache() {
