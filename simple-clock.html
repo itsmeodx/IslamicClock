@@ -172,7 +172,8 @@
                     { name: 'Maghrib', nameAr: 'المغرب', degree: 90, color: '#e74c3c' },
                     { name: 'Isha', nameAr: 'العشاء', degree: 150, color: '#9b59b6' },
                     { name: 'Midnight', nameAr: 'منتصف الليل', degree: 180, color: '#34495e' },
-                    { name: 'Fajr', nameAr: 'الفجر', degree: 270, color: '#3498db' }
+                    { name: 'Fajr', nameAr: 'الفجر', degree: 240, color: '#3498db' },
+                    { name: 'Sunrise', nameAr: 'الشروق', degree: 270, color: '#ff9800' }
                 ];
 
                 this.init();
@@ -320,6 +321,7 @@
             getDefaultPrayerTimes() {
                 return {
                     Fajr: '05:30',
+                    Sunrise: '06:30',
                     Dhuhr: '12:00',
                     Asr: '15:30',
                     Maghrib: '18:00',
