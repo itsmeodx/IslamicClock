@@ -767,10 +767,8 @@
 
                     // Prayer progress information
                     this.drawProgressInfo(prayerProgress, squareX, squareY, squareSize);
-                } else {
-                    // Show loading message when no prayer times are available
-                    this.drawLoadingInfo(squareX, squareY, squareSize);
                 }
+                // If no prayer times available, don't show any loading message
             }            drawProgressInfo(prayerProgress, squareX, squareY, squareSize) {
                 // Position in bottom left corner of the square border
                 const progressWidth = 140;
