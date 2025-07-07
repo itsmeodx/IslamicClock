@@ -63,7 +63,7 @@
         .clock-canvas {
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            background: radial-gradient(circle, #fafafa 0%, #e0e0e0 100%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(240, 240, 255, 0.8) 100%);
         }
 
         .toggle-btn {
@@ -133,9 +133,10 @@
                     apiUrl: 'https://api.aladhan.com/v1/timings',
                     updateInterval: 1000,
                     locationTimeout: 10000,
-                    cacheTimeout: 3600000, // 1 hour
+                    cacheTimeout: 86400000, // 24 hours - keep cache longer
                     defaultLocation: { lat: 21.4225, lng: 39.8262 }, // Mecca
-                    rateLimitDelay: 60000 // 1 minute delay between failed API calls
+                    rateLimitDelay: 60000, // 1 minute delay between failed API calls
+                    maxRetries: 3 // Maximum API retry attempts
                 };
 
                 // State
@@ -147,7 +148,8 @@
                     animationId: null,
                     lastFetchDate: null, // Track last fetch date
                     isInitialized: false, // Track if initial setup is complete
-                    lastApiCall: null // Track last API call for rate limiting
+                    lastApiCall: null, // Track last API call for rate limiting
+                    retryCount: 0 // Track API retry attempts
                 };
 
                 // DOM Elements (cached)
@@ -190,7 +192,7 @@
                 } catch (error) {
                     console.error('Initialization error:', error);
                     this.state.isInitialized = true;
-                    this.startClock(); // Start with default times
+                    this.startClock(); // Start clock without prayer times - will only show current time
                 }
             }
 
@@ -271,8 +273,18 @@
                 if (!this.state.location) return;
 
                 const today = new Date().toDateString();
+                const cacheKey = `prayer-times-${this.state.location.lat}-${this.state.location.lng}-${today}`;
 
-                // Skip if we already fetched today's prayers
+                // Always check cache first
+                const cached = this.getFromCache(cacheKey);
+                if (cached) {
+                    this.state.prayerTimes = cached;
+                    this.state.lastFetchDate = today;
+                    this.state.retryCount = 0; // Reset retry count on successful cache hit
+                    return;
+                }
+
+                // Skip API call if we already fetched today successfully
                 if (this.state.lastFetchDate === today && this.state.prayerTimes) {
                     return;
                 }
@@ -284,18 +296,16 @@
                     return;
                 }
 
-                // Check cache first
-                const cacheKey = `prayer-times-${this.state.location.lat}-${this.state.location.lng}-${today}`;
-                const cached = this.getFromCache(cacheKey);
-                if (cached) {
-                    this.state.prayerTimes = cached;
-                    this.state.lastFetchDate = today;
+                // Check retry limit
+                if (this.state.retryCount >= this.config.maxRetries) {
+                    console.log('Max API retries reached, will try again later');
                     return;
                 }
 
                 try {
-                    console.log('Fetching fresh prayer times from API...');
+                    console.log(`Fetching fresh prayer times from API... (attempt ${this.state.retryCount + 1})`);
                     this.state.lastApiCall = now;
+                    this.state.retryCount++;
 
                     const dateString = new Date().toISOString().split('T')[0];
                     const url = `${this.config.apiUrl}/${dateString}?latitude=${this.state.location.lat}&longitude=${this.state.location.lng}&method=2`;
@@ -303,30 +313,42 @@
                     const response = await fetch(url);
                     const data = await response.json();
 
-                    if (data.code === 200) {
+                    if (data.code === 200 && data.data && data.data.timings) {
                         this.state.prayerTimes = data.data.timings;
                         this.state.lastFetchDate = today;
+                        this.state.retryCount = 0; // Reset retry count on success
                         this.setCache(cacheKey, this.state.prayerTimes);
-                        console.log('Prayer times cached successfully');
+                        console.log('Prayer times fetched and cached successfully');
                     } else {
-                        throw new Error('API response error');
+                        throw new Error('Invalid API response structure');
                     }
                 } catch (error) {
-                    console.error('Error fetching prayer times:', error);
-                    this.state.prayerTimes = this.getDefaultPrayerTimes();
-                    this.state.lastFetchDate = today;
+                    console.error(`Error fetching prayer times (attempt ${this.state.retryCount}):`, error);
+
+                    // If we have no data at all, try to get any cached data as fallback
+                    if (!this.state.prayerTimes) {
+                        console.log('Searching for any available cached prayer times...');
+
+                        // Try to find any cached prayer times for this location (any date)
+                        const locationCacheKeys = Object.keys(localStorage).filter(key =>
+                            key.startsWith(`prayer-times-${this.state.location.lat}-${this.state.location.lng}`)
+                        );
+
+                        for (const key of locationCacheKeys) {
+                            const fallbackCache = this.getFromCache(key);
+                            if (fallbackCache) {
+                                console.log(`Using fallback cache from: ${key}`);
+                                this.state.prayerTimes = fallbackCache;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
             getDefaultPrayerTimes() {
-                return {
-                    Fajr: '05:30',
-                    Sunrise: '06:30',
-                    Dhuhr: '12:00',
-                    Asr: '15:30',
-                    Maghrib: '18:00',
-                    Isha: '19:30'
-                };
+                // No longer used - always rely on API data or cache
+                return null;
             }
 
             toggleClockType() {
@@ -387,7 +409,18 @@
                 const today = new Date().toDateString();
                 if (this.state.lastFetchDate && this.state.lastFetchDate !== today) {
                     console.log('New day detected, refreshing prayer times...');
+                    this.state.retryCount = 0; // Reset retry count for new day
                     this.fetchPrayerTimes();
+                }
+
+                // Periodic retry if we don't have prayer times
+                if (!this.state.prayerTimes && this.state.retryCount < this.config.maxRetries) {
+                    const now = Date.now();
+                    // Retry every 5 minutes if we have no data
+                    if (!this.state.lastApiCall || (now - this.state.lastApiCall) > (5 * 60 * 1000)) {
+                        console.log('No prayer times available, attempting to fetch...');
+                        this.fetchPrayerTimes();
+                    }
                 }
             }            drawAnalogClock() {
                 if (!this.ctx) return;
@@ -420,29 +453,29 @@
                 const squareX = centerX - squareSize / 2;
                 const squareY = centerY - squareSize / 2;
 
-                // Draw outer square border with Islamic pattern
+                // Draw outer square border with website theme colors
                 this.ctx.save();
 
-                // Outer decorative border
+                // Outer decorative border with website theme gradient
                 const outerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
-                outerGradient.addColorStop(0, '#d4af37');
-                outerGradient.addColorStop(0.5, '#b8860b');
-                outerGradient.addColorStop(1, '#8b6914');
+                outerGradient.addColorStop(0, '#667eea');
+                outerGradient.addColorStop(0.5, '#6b73e8');
+                outerGradient.addColorStop(1, '#764ba2');
 
                 this.ctx.fillStyle = outerGradient;
                 this.ctx.fillRect(squareX - 8, squareY - 8, squareSize + 16, squareSize + 16);
 
-                // Inner square with subtle gradient
+                // Inner square with glassmorphism effect matching website
                 const innerGradient = this.ctx.createLinearGradient(squareX, squareY, squareX + squareSize, squareY + squareSize);
-                innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
-                innerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-                innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+                innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+                innerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+                innerGradient.addColorStop(1, 'rgba(255, 255, 255, 0.15)');
 
                 this.ctx.fillStyle = innerGradient;
                 this.ctx.fillRect(squareX, squareY, squareSize, squareSize);
 
-                // Border lines
-                this.ctx.strokeStyle = '#2c5530';
+                // Border lines with website theme color
+                this.ctx.strokeStyle = '#764ba2';
                 this.ctx.lineWidth = 4;
                 this.ctx.strokeRect(squareX, squareY, squareSize, squareSize);
 
@@ -458,7 +491,7 @@
 
                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
                 this.ctx.fillRect(centerX - bismillahWidth / 2, bismillahY, bismillahWidth, bismillahHeight);
-                this.ctx.strokeStyle = 'rgba(212, 175, 55, 0.8)';
+                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.8)';
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeRect(centerX - bismillahWidth / 2, bismillahY, bismillahWidth, bismillahHeight);
 
@@ -468,7 +501,7 @@
                 this.ctx.shadowOffsetX = 1;
                 this.ctx.shadowOffsetY = 1;
 
-                this.ctx.fillStyle = '#2c5530';
+                this.ctx.fillStyle = '#764ba2';
                 this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -476,52 +509,52 @@
 
                 // English translation
                 this.ctx.shadowBlur = 0;
-                this.ctx.fillStyle = '#666';
+                this.ctx.fillStyle = '#667eea';
                 this.ctx.font = 'italic 9px Arial';
                 this.ctx.fillText('In the name of Allah, the Most Gracious, the Most Merciful', centerX, bismillahY + 23);
             }
 
             drawClockFace(centerX, centerY, radius) {
-                // Outer decorative border with Islamic pattern
+                // Outer decorative border with website theme colors
                 const outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
-                outerGradient.addColorStop(0, '#d4af37');
-                outerGradient.addColorStop(0.5, '#b8860b');
-                outerGradient.addColorStop(1, '#8b6914');
+                outerGradient.addColorStop(0, '#667eea');
+                outerGradient.addColorStop(0.5, '#5a6fd8');
+                outerGradient.addColorStop(1, '#4c5bc6');
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI);
                 this.ctx.fillStyle = outerGradient;
                 this.ctx.fill();
 
-                // Main clock face with elegant gradient
+                // Main clock face with elegant gradient matching website theme
                 const mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-                mainGradient.addColorStop(0, '#ffffff');
-                mainGradient.addColorStop(0.3, '#fafafa');
-                mainGradient.addColorStop(0.7, '#f0f8f0');
-                mainGradient.addColorStop(0.9, '#e8f5e8');
-                mainGradient.addColorStop(1, '#d0e8d0');
+                mainGradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+                mainGradient.addColorStop(0.3, 'rgba(248, 248, 255, 0.9)');
+                mainGradient.addColorStop(0.7, 'rgba(240, 240, 255, 0.85)');
+                mainGradient.addColorStop(0.9, 'rgba(230, 235, 255, 0.8)');
+                mainGradient.addColorStop(1, 'rgba(220, 225, 255, 0.75)');
 
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
                 this.ctx.fillStyle = mainGradient;
                 this.ctx.fill();
 
-                // Elegant border
-                this.ctx.strokeStyle = '#2c5530';
+                // Elegant border matching website theme
+                this.ctx.strokeStyle = '#764ba2';
                 this.ctx.lineWidth = 4;
                 this.ctx.stroke();
 
-                // Inner decorative circles
+                // Inner decorative circles with website theme colors
                 for (let i = 1; i <= 3; i++) {
                     this.ctx.beginPath();
                     this.ctx.arc(centerX, centerY, radius - (i * 12), 0, 2 * Math.PI);
-                    this.ctx.strokeStyle = `rgba(212, 175, 55, ${0.4 - i * 0.1})`;
+                    this.ctx.strokeStyle = `rgba(102, 126, 234, ${0.4 - i * 0.1})`;
                     this.ctx.lineWidth = 1;
                     this.ctx.stroke();
                 }
 
-                // Subtle hour markers with elegant styling
-                this.ctx.strokeStyle = 'rgba(44, 85, 48, 0.3)';
+                // Subtle hour markers with website theme colors
+                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
                 this.ctx.lineWidth = 1;
                 for (let i = 0; i < 24; i++) {
                     const angle = (i * 15) * Math.PI / 180;
@@ -547,14 +580,14 @@
             }
 
             drawIslamicGeometry(centerX, centerY, size) {
-                // 8-pointed star (Khatam) with enhanced design
+                // 8-pointed star (Khatam) with website theme colors
                 this.ctx.save();
 
-                // Outer star with gradient
+                // Outer star with gradient using website theme
                 const starGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size);
-                starGradient.addColorStop(0, 'rgba(212, 175, 55, 0.8)');
-                starGradient.addColorStop(0.7, 'rgba(212, 175, 55, 0.4)');
-                starGradient.addColorStop(1, 'rgba(212, 175, 55, 0.1)');
+                starGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+                starGradient.addColorStop(0.7, 'rgba(102, 126, 234, 0.4)');
+                starGradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
 
                 this.ctx.beginPath();
                 for (let i = 0; i < 16; i++) {
@@ -572,16 +605,16 @@
                 this.ctx.closePath();
                 this.ctx.fillStyle = starGradient;
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#d4af37';
+                this.ctx.strokeStyle = '#667eea';
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
                 // Inner ornamental circle
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, size * 0.25, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#d4af37';
+                this.ctx.fillStyle = '#667eea';
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#2c5530';
+                this.ctx.strokeStyle = '#764ba2';
                 this.ctx.lineWidth = 1;
                 this.ctx.stroke();
 
@@ -636,10 +669,10 @@
                         const timeX = centerX + Math.cos(angle) * timeRadius;
                         const timeY = centerY + Math.sin(angle) * timeRadius;
 
-                        // Time background
-                        this.ctx.fillStyle = 'rgba(44, 85, 48, 0.8)';
+                        // Time background with website theme
+                        this.ctx.fillStyle = 'rgba(118, 75, 162, 0.9)';
                         this.ctx.fillRect(timeX - 18, timeY - 6, 36, 12);
-                        this.ctx.strokeStyle = '#d4af37';
+                        this.ctx.strokeStyle = '#667eea';
                         this.ctx.lineWidth = 1;
                         this.ctx.strokeRect(timeX - 18, timeY - 6, 36, 12);
 
@@ -678,7 +711,7 @@
             drawClockHands(centerX, centerY, radius, squareX, squareY, squareSize) {
                 const prayerProgress = this.getPrayerProgress();
 
-                // Only draw the main prayer progress hand with enhanced design
+                // Only draw the main prayer progress hand if we have prayer times
                 if (prayerProgress) {
                     const progressAngle = (prayerProgress.progressDegree - 90) * Math.PI / 180;
 
@@ -695,15 +728,15 @@
                     const handLength = radius * 0.75;
                     const handWidth = 8;
 
-                    // Create gradient for the hand
+                    // Create gradient for the hand with website theme colors
                     const handGradient = this.ctx.createLinearGradient(
                         centerX, centerY,
                         centerX + Math.cos(progressAngle) * handLength,
                         centerY + Math.sin(progressAngle) * handLength
                     );
-                    handGradient.addColorStop(0, '#2c5530');
-                    handGradient.addColorStop(0.7, '#1e3a21');
-                    handGradient.addColorStop(1, '#d4af37');
+                    handGradient.addColorStop(0, '#764ba2');
+                    handGradient.addColorStop(0.7, '#6b4a98');
+                    handGradient.addColorStop(1, '#667eea');
 
                     // Draw the main hand with tapered design
                     this.ctx.beginPath();
@@ -724,16 +757,19 @@
                     this.ctx.shadowBlur = 0;
                     this.ctx.beginPath();
                     this.ctx.arc(tipX, tipY, 6, 0, 2 * Math.PI);
-                    this.ctx.fillStyle = '#d4af37';
+                    this.ctx.fillStyle = '#667eea';
                     this.ctx.fill();
-                    this.ctx.strokeStyle = '#2c5530';
+                    this.ctx.strokeStyle = '#764ba2';
                     this.ctx.lineWidth = 2;
                     this.ctx.stroke();
 
                     this.ctx.restore();
 
-                    // Prayer progress information positioned in bottom right corner
+                    // Prayer progress information
                     this.drawProgressInfo(prayerProgress, squareX, squareY, squareSize);
+                } else {
+                    // Show loading message when no prayer times are available
+                    this.drawLoadingInfo(squareX, squareY, squareSize);
                 }
             }            drawProgressInfo(prayerProgress, squareX, squareY, squareSize) {
                 // Position in bottom left corner of the square border
@@ -742,29 +778,68 @@
                 const progressX = squareX + 15; // 15px margin from left edge
                 const progressY = squareY + squareSize - progressHeight - 15; // 15px margin from bottom edge
 
-                // Background for progress info
+                // Background for progress info with website theme
                 this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                this.ctx.strokeStyle = 'rgba(44, 85, 48, 0.3)';
+                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
                 this.ctx.lineWidth = 1;
                 this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
                 this.ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
 
-                // Current prayer name
-                this.ctx.fillStyle = '#2c5530';
+                // Current prayer name with website theme
+                this.ctx.fillStyle = '#764ba2';
                 this.ctx.font = 'bold 12px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText(`Current: ${prayerProgress.currentPrayer}`, progressX + progressWidth/2, progressY + 15);
 
                 // Time to next prayer
-                this.ctx.fillStyle = '#666';
+                this.ctx.fillStyle = '#667eea';
                 this.ctx.font = '11px Arial';
                 this.ctx.fillText(`${prayerProgress.timeRemaining} to ${prayerProgress.nextPrayer}`, progressX + progressWidth/2, progressY + 30);
 
-                // Progress percentage
-                this.ctx.fillStyle = '#d4af37';
+                // Progress percentage with website theme
+                this.ctx.fillStyle = '#667eea';
                 this.ctx.font = 'bold 10px Arial';
                 this.ctx.fillText(`${prayerProgress.progressPercentage}% Complete`, progressX + progressWidth/2, progressY + 45);
+            }
+
+            drawLoadingInfo(squareX, squareY, squareSize) {
+                // Position in bottom left corner of the square border
+                const progressWidth = 140;
+                const progressHeight = 55;
+                const progressX = squareX + 15; // 15px margin from left edge
+                const progressY = squareY + squareSize - progressHeight - 15; // 15px margin from bottom edge
+
+                // Background for loading info with website theme
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                this.ctx.strokeStyle = 'rgba(118, 75, 162, 0.3)';
+                this.ctx.lineWidth = 1;
+                this.ctx.fillRect(progressX, progressY, progressWidth, progressHeight);
+                this.ctx.strokeRect(progressX, progressY, progressWidth, progressHeight);
+
+                // Status based on retry count
+                let mainMessage = 'Loading Prayer Times...';
+                let subMessage = 'Fetching from API or cache';
+
+                if (this.state.retryCount >= this.config.maxRetries) {
+                    mainMessage = 'Prayer Times Unavailable';
+                    subMessage = 'Will retry periodically';
+                } else if (this.state.retryCount > 0) {
+                    mainMessage = `Retrying... (${this.state.retryCount}/${this.config.maxRetries})`;
+                    subMessage = 'Please check connection';
+                }
+
+                // Main message
+                this.ctx.fillStyle = '#764ba2';
+                this.ctx.font = 'bold 11px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(mainMessage, progressX + progressWidth/2, progressY + 20);
+
+                // Status message
+                this.ctx.fillStyle = '#667eea';
+                this.ctx.font = '9px Arial';
+                this.ctx.fillText(subMessage, progressX + progressWidth/2, progressY + 35);
             }
 
             drawHand(centerX, centerY, angle, length, width, color) {
@@ -781,39 +856,39 @@
             }
 
             drawCenterCircle(centerX, centerY) {
-                // Enhanced center circle with multiple layers
+                // Enhanced center circle with website theme colors
                 this.ctx.save();
 
-                // Outer ring with glow
-                this.ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+                // Outer ring with glow using website theme
+                this.ctx.shadowColor = 'rgba(102, 126, 234, 0.6)';
                 this.ctx.shadowBlur = 20;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#2c5530';
+                this.ctx.fillStyle = '#764ba2';
                 this.ctx.fill();
 
-                // Middle ring
+                // Middle ring with website theme
                 this.ctx.shadowBlur = 0;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-                this.ctx.fillStyle = '#d4af37';
+                this.ctx.fillStyle = '#667eea';
                 this.ctx.fill();
-                this.ctx.strokeStyle = '#2c5530';
+                this.ctx.strokeStyle = '#764ba2';
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
-                // Inner highlight circle
+                // Inner highlight circle with website theme
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, 10, 0, 2 * Math.PI);
                 const centerGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 10);
                 centerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-                centerGradient.addColorStop(0.7, 'rgba(212, 175, 55, 0.6)');
-                centerGradient.addColorStop(1, 'rgba(44, 85, 48, 0.8)');
+                centerGradient.addColorStop(0.7, 'rgba(102, 126, 234, 0.6)');
+                centerGradient.addColorStop(1, 'rgba(118, 75, 162, 0.8)');
                 this.ctx.fillStyle = centerGradient;
                 this.ctx.fill();
 
-                // Islamic symbol in center
-                this.ctx.fillStyle = '#2c5530';
+                // Islamic symbol in center with website theme
+                this.ctx.fillStyle = '#764ba2';
                 this.ctx.font = 'bold 14px Arial';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -922,21 +997,35 @@
                     const cached = localStorage.getItem(key);
                     if (cached) {
                         const { data, timestamp } = JSON.parse(cached);
-                        // Check if cache is still valid (within 1 hour for safety)
+                        // Check if cache is still valid (within 24 hours)
                         if (Date.now() - timestamp < this.config.cacheTimeout) {
                             console.log('Using cached prayer times');
                             return data;
                         } else {
-                            // Remove expired cache
-                            localStorage.removeItem(key);
-                            console.log('Cache expired, removed old data');
+                            // Keep expired cache for fallback, but mark it as expired
+                            console.log('Cache expired but keeping for fallback');
+                            // Don't remove expired cache immediately - keep as fallback
                         }
                     }
                 } catch (error) {
                     console.error('Cache read error:', error);
-                    // Remove corrupted cache
-                    localStorage.removeItem(key);
+                    // Don't remove cache on read error - might be temporary
                 }
+
+                // Try to get any existing cache as fallback, even if expired
+                try {
+                    const cached = localStorage.getItem(key);
+                    if (cached) {
+                        const { data } = JSON.parse(cached);
+                        if (data && Object.keys(data).length > 0) {
+                            console.log('Using expired cache as fallback');
+                            return data;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Fallback cache read error:', error);
+                }
+
                 return null;
             }
 
@@ -960,19 +1049,24 @@
                     const keys = Object.keys(localStorage);
                     const prayerTimeKeys = keys.filter(key => key.startsWith('prayer-times-'));
 
-                    // Remove caches older than 7 days
-                    const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                    // Only remove caches older than 30 days (keep more data for fallback)
+                    const monthAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
 
                     prayerTimeKeys.forEach(key => {
                         try {
                             const cached = JSON.parse(localStorage.getItem(key));
-                            if (cached.timestamp < weekAgo) {
+                            if (cached.timestamp < monthAgo) {
                                 localStorage.removeItem(key);
-                                console.log('Removed old cache:', key);
+                                console.log('Removed very old cache:', key);
                             }
                         } catch (e) {
-                            // Remove corrupted cache
-                            localStorage.removeItem(key);
+                            // Only remove if completely corrupted
+                            try {
+                                JSON.parse(localStorage.getItem(key));
+                            } catch (parseError) {
+                                localStorage.removeItem(key);
+                                console.log('Removed corrupted cache:', key);
+                            }
                         }
                     });
                 } catch (error) {
