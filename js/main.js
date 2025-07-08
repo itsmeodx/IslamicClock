@@ -882,9 +882,9 @@ class IslamicPrayerClock {
 		const timeString = `${hours12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
 		if (this.state.language === 'ar') {
-			// Arabic format with Arabic numerals and Arabic AM/PM
+			// Arabic format with regular numerals and Arabic AM/PM
 			const arabicAmPm = ampm === 'AM' ? 'ص' : 'م';
-			return `${this.toArabicNumerals(timeString)} ${arabicAmPm}`;
+			return `${timeString} ${arabicAmPm}`;
 		} else {
 			// English format
 			return `${timeString} ${ampm}`;
@@ -901,8 +901,8 @@ class IslamicPrayerClock {
 		const year = date.getFullYear();
 
 		if (this.state.language === 'ar') {
-			// Arabic format: اليوم، اليوم الشهر السنة
-			return `${weekday}، ${this.toArabicNumerals(day)} ${month} ${this.toArabicNumerals(year)}`;
+			// Arabic format with regular numerals: اليوم، اليوم الشهر السنة
+			return `${weekday}، ${day} ${month} ${year}`;
 		} else {
 			// English format: Weekday, Month Day, Year
 			return `${weekday}, ${month} ${day}, ${year}`;
@@ -1265,8 +1265,8 @@ class IslamicPrayerClock {
 				this.ctx.textAlign = 'center';
 				this.ctx.textBaseline = 'middle';
 				const prayerTimeText = this.state.prayerTimes[prayer.name];
-				const displayTime = this.state.language === 'ar' ? this.toArabicNumerals(prayerTimeText) : prayerTimeText;
-				this.ctx.fillText(displayTime, timeX, timeY);
+				// Use regular numerals for prayer times in all languages
+				this.ctx.fillText(prayerTimeText, timeX, timeY);
 			}
 
 			// Arabic name with elegant styling - positioned inside with better spacing
@@ -1418,8 +1418,8 @@ class IslamicPrayerClock {
 		this.ctx.fillStyle = '#daa520';
 		this.ctx.font = 'bold 10px Arial';
 		const progressText = `${prayerProgress.progressPercentage}% ${this.getText('complete')}`;
-		const displayProgressText = this.state.language === 'ar' ? this.toArabicNumerals(progressText) : progressText;
-		this.ctx.fillText(displayProgressText, progressX + progressWidth / 2, progressY + 40);
+		// Use regular numerals for progress text in all languages
+		this.ctx.fillText(progressText, progressX + progressWidth / 2, progressY + 40);
 	}
 
 
@@ -1552,16 +1552,13 @@ class IslamicPrayerClock {
 
 		let timeString;
 		if (this.state.language === 'ar') {
-			// Use Arabic abbreviations (first letter of each word)
-			const arabicHours = this.toArabicNumerals(hours);
-			const arabicMins = this.toArabicNumerals(mins);
-
+			// Use Arabic abbreviations with regular numerals
 			if (hours > 0) {
 				// س = first letter of ساعة (hour), د = first letter of دقيقة (minute)
-				timeString = `${arabicHours}س ${arabicMins}د`;
+				timeString = `${hours}س ${mins}د`;
 			} else {
 				// د = first letter of دقيقة (minute)
-				timeString = `${arabicMins}د`;
+				timeString = `${mins}د`;
 			}
 		} else {
 			// English format with abbreviations
