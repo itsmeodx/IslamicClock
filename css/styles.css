@@ -19,10 +19,12 @@ body {
     background: #f5f2e8;
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     color: #2c5530;
     position: relative;
+    padding: 20px 0;
 }
 
 body::before {
@@ -169,8 +171,9 @@ body::before {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     background: #ffffff;
     border: 3px solid #d4af37;
+    width: 500px;
+    height: 550px;
     max-width: 100%;
-    height: auto;
     display: block;
     margin: 0 auto;
 }
@@ -244,8 +247,49 @@ body::before {
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Page Title */
+.page-title {
+    font-size: 2.5rem;
+    color: #2c5530;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.page-title::before {
+    content: '☪';
+    position: absolute;
+    left: -50px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem;
+    color: #d4af37;
+    opacity: 0.8;
+}
+
+.page-title::after {
+    content: '☪';
+    position: absolute;
+    right: -50px;
+    top: 50%;
+    transform: translateY(-50%) scaleX(-1);
+    font-size: 2rem;
+    color: #d4af37;
+    opacity: 0.8;
+}
+
 @media (max-width: 768px) {
-    .clock-title { font-size: 1.8rem; }
+    .page-title {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+    .page-title::before,
+    .page-title::after {
+        display: none; /* Hide decorative elements on mobile */
+    }
     .digital-clock { font-size: 2.2rem; }
     .clock-canvas {
         width: 300px !important;
@@ -267,6 +311,10 @@ body::before {
 
 /* Additional mobile breakpoint for smaller screens */
 @media (max-width: 400px) {
+    .page-title {
+        font-size: 1.6rem;
+        margin-bottom: 15px;
+    }
     .clock-canvas {
         width: 260px !important;
         height: 286px !important;
@@ -277,9 +325,6 @@ body::before {
         max-width: none !important;
         padding: 12px !important;
         margin: 10px auto;
-    }
-    .clock-title {
-        font-size: 1.3rem;
     }
 }
 

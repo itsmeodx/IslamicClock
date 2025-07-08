@@ -145,7 +145,19 @@
                 </div>
             </div>
 
-            <div class="settings-actions">
+            <div class="settings-group">
+                <label for="clock-mode-toggle" id="clock-mode-label">Clock Mode:</label>
+                <div class="toggle-container">
+                    <span class="toggle-label-left" id="clock-mode-left-label">Digital</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="clock-mode-toggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label-right" id="clock-mode-right-label">Analog</span>
+                </div>
+            </div>
+
+            <div class="settings-actions">()
                 <button class="settings-btn refresh" id="refresh-data">Refresh</button>
                 <button class="settings-btn primary" id="save-settings">Save</button>
                 <button class="settings-btn secondary" id="reset-settings">Reset</button>
@@ -153,26 +165,20 @@
         </div>
     </div>
 
-    <div class="clock-container">
-        <div class="islamic-decoration">
-            <!-- <div class="decoration-top">۞ ۞ ۞</div> -->
-            <h1 class="clock-title">🕌 Islamic Prayer Clock</h1>
-            <!-- <div class="decoration-bottom">۞ ۞ ۞</div> -->
-        </div>
+    <!-- Page Title -->
+    <h1 class="page-title">🕌 Islamic Prayer Clock</h1>
 
+    <div class="clock-container">
         <div id="digital-display" class="digital-clock">
             <div id="time-display">00:00:00</div>
             <div id="date-display" class="date-display"></div>
         </div>
 
         <div id="analog-display" class="analog-clock" style="display: none;">
-            <canvas id="clock-canvas" class="clock-canvas" width="500" height="550"></canvas>
+            <canvas id="clock-canvas" class="clock-canvas"></canvas>
             <div id="location-info" class="location-info"></div>
             <div id="hijri-date" class="hijri-date"></div>
         </div>
-
-        <button id="toggle-btn" class="toggle-btn">Switch to Prayer Clock</button>
-    </div>
 
     <script src="js/main.js"></script>
 </body>

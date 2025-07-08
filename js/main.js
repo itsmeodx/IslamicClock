@@ -14,7 +14,7 @@ class IslamicPrayerClock {
 
 		// State
 		this.state = {
-			clockType: localStorage.getItem('clockType') || 'digital',
+			clockType: localStorage.getItem('clockType') || 'analog',
 			language: localStorage.getItem('language') || 'en', // 'en' or 'ar'
 			calculationMethod: localStorage.getItem('calculationMethod') || this.config.defaultCalculationMethod,
 			daylightSaving: parseInt(localStorage.getItem('daylightSaving') || '0'), // -1, 0, or 1
@@ -43,7 +43,6 @@ class IslamicPrayerClock {
 			analogDisplay: document.getElementById('analog-display'),
 			timeDisplay: document.getElementById('time-display'),
 			dateDisplay: document.getElementById('date-display'),
-			toggleBtn: document.getElementById('toggle-btn'),
 			canvas: document.getElementById('clock-canvas'),
 			locationInfo: document.getElementById('location-info'),
 			hijriDate: document.getElementById('hijri-date'),
@@ -51,6 +50,7 @@ class IslamicPrayerClock {
 			settingsToggle: document.getElementById('settings-toggle'),
 			settingsPanel: document.getElementById('settings-panel'),
 			languageToggle: document.getElementById('language-toggle'),
+			clockModeToggle: document.getElementById('clock-mode-toggle'),
 			calculationMethod: document.getElementById('calculation-method'),
 			dstSelect: document.getElementById('dst-select'),
 			progressToggle: document.getElementById('progress-toggle'),
@@ -132,7 +132,9 @@ class IslamicPrayerClock {
 				// Settings menu translations
 				settings: 'Settings',
 				language: 'Language',
-
+				clockMode: 'Clock Mode',
+				digital: 'Digital',
+				analog: 'Analog',
 				calculationMethod: 'Calculation Method',
 				daylightSaving: 'Daylight Saving Time',
 				dstMinus1Hour: '-1 Hour',
@@ -202,6 +204,9 @@ class IslamicPrayerClock {
 				// Settings menu translations
 				settings: 'الإعدادات',
 				language: 'اللغة',
+				clockMode: 'وضع الساعة',
+				digital: 'رقمية',
+				analog: 'تناظرية',
 				calculationMethod: 'طريقة الحساب',
 				daylightSaving: 'التوقيت الصيفي',
 				dstMinus1Hour: '- ١ ساعة',
@@ -253,6 +258,7 @@ class IslamicPrayerClock {
 		try {
 			console.log('Starting initialization...');
 			this.setupEventListeners();
+			this.setupHighDPICanvas(); // Setup high-DPI canvas support
 			this.updateLanguageDisplay(); // Set up translations first
 			this.updateClockDisplay();
 			await this.initializeLocation();
@@ -268,11 +274,46 @@ class IslamicPrayerClock {
 			console.log('Attempting Hijri date fetch after initialization error...');
 			this.fetchHijriDate(); // Fallback to separate call if needed
 		}
-	} setupEventListeners() {
-		this.dom.toggleBtn.addEventListener('click', () => this.toggleClockType());
+	}
 
+	setupHighDPICanvas() {
+		if (!this.dom.canvas || !this.ctx) return;
+
+		const canvas = this.dom.canvas;
+		const rect = canvas.getBoundingClientRect();
+		const devicePixelRatio = window.devicePixelRatio || 1;
+
+		// Fallback to CSS computed dimensions if getBoundingClientRect returns 0
+		let width = rect.width;
+		let height = rect.height;
+
+		if (width === 0 || height === 0) {
+			const computedStyle = window.getComputedStyle(canvas);
+			width = parseInt(computedStyle.width) || 500; // Default to 500px
+			height = parseInt(computedStyle.height) || 550; // Default to 550px
+		}
+
+		// Ensure minimum dimensions
+		width = Math.max(width, 200);
+		height = Math.max(height, 220);
+
+		// Set the actual canvas size in memory (high resolution)
+		canvas.width = width * devicePixelRatio;
+		canvas.height = height * devicePixelRatio;
+
+		// Scale the canvas back down using CSS
+		canvas.style.width = width + 'px';
+		canvas.style.height = height + 'px';
+
+		// Scale the drawing context so everything draws at the correct size
+		this.ctx.scale(devicePixelRatio, devicePixelRatio);
+
+		// Store the scale factor for calculations
+		this.canvasScale = devicePixelRatio;
+	} setupEventListeners() {
 		// Settings menu event listeners
 		this.dom.settingsToggle.addEventListener('click', () => this.toggleSettingsMenu());
+		this.dom.clockModeToggle.addEventListener('change', () => this.toggleClockType());
 		this.dom.saveSettings.addEventListener('click', () => this.saveSettings());
 		this.dom.resetSettings.addEventListener('click', () => this.resetSettings());
 		this.dom.refreshData.addEventListener('click', () => this.refreshData());
@@ -296,6 +337,7 @@ class IslamicPrayerClock {
 		// Handle window resize for responsive canvas
 		window.addEventListener('resize', this.debounce(() => {
 			if (this.state.clockType === 'analog') {
+				this.setupHighDPICanvas(); // Recalculate canvas for new size
 				this.state.forceRedraw = true;
 				this.drawAnalogClock();
 			}
@@ -570,7 +612,17 @@ class IslamicPrayerClock {
 		localStorage.setItem('clockType', this.state.clockType);
 		// Clear canvas cache when switching modes
 		this.state.canvasCache = null;
-		this.updateClockDisplay();
+
+		// Setup high-DPI canvas when switching to analog
+		if (this.state.clockType === 'analog') {
+			// Use setTimeout to ensure DOM is updated before canvas setup
+			setTimeout(() => {
+				this.setupHighDPICanvas();
+				this.updateClockDisplay();
+			}, 0);
+		} else {
+			this.updateClockDisplay();
+		}
 	}
 
 	toggleLanguage() {
@@ -614,16 +666,6 @@ class IslamicPrayerClock {
 			document.body.style.textAlign = 'left';
 		}
 
-		// Update toggle button text
-		const isAnalog = this.state.clockType === 'analog';
-		this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
-
-		// Update main title
-		const clockTitle = document.querySelector('.clock-title');
-		if (clockTitle) {
-			clockTitle.textContent = this.getText('title');
-		}
-
 		// Update page title
 		document.title = this.getText('title');
 	}
@@ -635,15 +677,21 @@ class IslamicPrayerClock {
 		// Update HTML lang attribute
 		document.documentElement.lang = this.state.language;
 
-		// Update main title
-		const clockTitle = document.querySelector('.clock-title');
-		if (clockTitle) {
-			clockTitle.textContent = this.getText('title');
-		}
+		// Update settings labels
+		const settingsTitle = document.getElementById('settings-title');
+		if (settingsTitle) settingsTitle.textContent = this.getText('settings');
 
-		// Update toggle button text
-		const isAnalog = this.state.clockType === 'analog';
-		this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
+		const languageLabel = document.getElementById('language-label');
+		if (languageLabel) languageLabel.textContent = this.getText('language');
+
+		const clockModeLabel = document.getElementById('clock-mode-label');
+		if (clockModeLabel) clockModeLabel.textContent = this.getText('clockMode');
+
+		const clockModeLeftLabel = document.getElementById('clock-mode-left-label');
+		if (clockModeLeftLabel) clockModeLeftLabel.textContent = this.getText('digital');
+
+		const clockModeRightLabel = document.getElementById('clock-mode-right-label');
+		if (clockModeRightLabel) clockModeRightLabel.textContent = this.getText('analog');
 
 		// Set initial loading text if empty or update if needed
 		if (!this.dom.locationInfo.textContent || this.dom.locationInfo.textContent.includes('Getting location') || this.dom.locationInfo.textContent.includes('جاري تحديد الموقع')) {
@@ -745,7 +793,6 @@ class IslamicPrayerClock {
 
 		this.dom.digitalDisplay.style.display = isAnalog ? 'none' : 'block';
 		this.dom.analogDisplay.style.display = isAnalog ? 'block' : 'none';
-		this.dom.toggleBtn.textContent = isAnalog ? this.getText('switchToDigital') : this.getText('switchToPrayerClock');
 
 		if (isAnalog) {
 			// Force redraw when switching to analog mode
@@ -875,16 +922,33 @@ class IslamicPrayerClock {
 		if (!this.ctx) return;
 
 		const canvas = this.dom.canvas;
-		const centerX = canvas.width / 2;
-		const centerY = canvas.height / 2;
-		const radius = Math.min(centerX, centerY - 25) - 50; // Adjusted for taller canvas
+		const rect = canvas.getBoundingClientRect();
 
-		// Clear canvas efficiently
+		// Use logical dimensions (what the user sees)
+		let logicalWidth = rect.width;
+		let logicalHeight = rect.height;
+
+		// Fallback to computed style or default dimensions if rect is 0
+		if (logicalWidth === 0 || logicalHeight === 0) {
+			const computedStyle = window.getComputedStyle(canvas);
+			logicalWidth = parseInt(computedStyle.width) || 500;
+			logicalHeight = parseInt(computedStyle.height) || 550;
+		}
+
+		// Ensure minimum dimensions
+		logicalWidth = Math.max(logicalWidth, 200);
+		logicalHeight = Math.max(logicalHeight, 220);
+
+		const centerX = logicalWidth / 2;
+		const centerY = logicalHeight / 2;
+		const radius = Math.max(Math.min(centerX, centerY - 25) - 50, 50); // Ensure minimum radius of 50
+
+		// Clear canvas efficiently (use actual canvas dimensions)
 		this.ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 		// Calculate square border dimensions - make it more rectangular
 		const squareWidth = (radius + 40) * 2;
-		const squareHeight = canvas.height - 20; // Use most of the canvas height
+		const squareHeight = logicalHeight - 20; // Use most of the canvas height
 		const squareX = centerX - squareWidth / 2;
 		const squareY = 10; // Small margin from top
 
@@ -974,6 +1038,12 @@ class IslamicPrayerClock {
 	}
 
 	drawClockFace(centerX, centerY, radius) {
+		// Ensure radius is valid for gradient creation
+		if (radius < 10) {
+			console.warn('Radius too small for clock face:', radius);
+			return;
+		}
+
 		// Use cached gradients if available, otherwise create them
 		if (!this.state.canvasCache) {
 			this.state.canvasCache = {};
@@ -981,7 +1051,10 @@ class IslamicPrayerClock {
 
 		// Outer decorative border with Arabian theme colors
 		if (!this.state.canvasCache.outerGradient) {
-			this.state.canvasCache.outerGradient = this.ctx.createRadialGradient(centerX, centerY, radius - 5, centerX, centerY, radius + 10);
+			// Ensure gradient radii are positive
+			const innerRadius = Math.max(radius - 5, 1);
+			const outerRadius = Math.max(radius + 10, innerRadius + 1);
+			this.state.canvasCache.outerGradient = this.ctx.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
 			this.state.canvasCache.outerGradient.addColorStop(0, '#daa520');
 			this.state.canvasCache.outerGradient.addColorStop(0.5, '#cd853f');
 			this.state.canvasCache.outerGradient.addColorStop(1, '#8b4513');
@@ -994,7 +1067,9 @@ class IslamicPrayerClock {
 
 		// Main clock face with warm Arabian gradient
 		if (!this.state.canvasCache.mainGradient) {
-			this.state.canvasCache.mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+			// Ensure radius is positive for gradient
+			const gradientRadius = Math.max(radius, 1);
+			this.state.canvasCache.mainGradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, gradientRadius);
 			this.state.canvasCache.mainGradient.addColorStop(0, 'rgba(255, 248, 220, 0.98)');
 			this.state.canvasCache.mainGradient.addColorStop(0.3, 'rgba(250, 240, 210, 0.95)');
 			this.state.canvasCache.mainGradient.addColorStop(0.7, 'rgba(245, 222, 179, 0.9)');
@@ -1482,6 +1557,7 @@ class IslamicPrayerClock {
 	initializeSettingsUI() {
 		// Set current values in the UI
 		this.dom.languageToggle.checked = this.state.language === 'ar';
+		this.dom.clockModeToggle.checked = this.state.clockType === 'analog';
 		this.dom.calculationMethod.value = this.state.calculationMethod;
 		this.dom.dstSelect.value = this.state.daylightSaving.toString();
 		this.dom.progressToggle.checked = this.state.showProgress;
@@ -1600,7 +1676,7 @@ class IslamicPrayerClock {
 			// For offset changes, immediately reapply all adjustments to existing times
 			else if (offsetsChanged && !methodChanged && this.state.prayerTimes) {
 				// Try to get original times from cache and reapply all adjustments
-				const today = new Date().toDateString();
+				const today = new Date().toDate
 				const baseCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}`;
 
 				// Look for any cached version for today with same method
