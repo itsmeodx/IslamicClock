@@ -274,246 +274,79 @@ body::before {
 }
 
 @media (max-width: 768px) {
-    body {
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        padding: 10px;
-        min-height: 100vh;
-        overflow-x: hidden;
-        /* Mobile browser text size adjustments */
-        -moz-text-size-adjust: none;
-        -webkit-text-size-adjust: none;
-        text-size-adjust: none;
-    }
+    /* Mobile: Keep desktop design, only scale for screen size */
 
     .page-title {
-        font-size: 2rem;
-        margin-bottom: 20px;
-        width: 100%;
-        text-align: center;
-        order: 2;
-    }
-
-    .page-title::before,
-    .page-title::after {
-        display: none; /* Hide decorative elements on mobile */
-    }
-
-    .digital-clock {
-        font-size: 2.2rem;
-    }
-
-    .clock-canvas {
-        width: 450px !important;
-        height: 530px !important;
-        max-width: calc(100vw - 40px);
-        max-height: calc(70vh);
-        /* Firefox mobile canvas optimization */
-        image-rendering: optimizeQuality;
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: crisp-edges;
-        transform: translate3d(0, 0, 0); /* Force GPU acceleration */
-        backface-visibility: hidden;
-        perspective: 1000px;
-        will-change: transform;
-        /* Prevent canvas overflow on Firefox mobile */
-        box-sizing: border-box !important;
-        display: block !important;
-        margin: 0 auto !important;
-        position: relative !important;
+        font-size: 2rem; /* Slightly smaller than desktop */
     }
 
     .clock-container {
-        width: 98%;
-        height: auto !important;
-        max-width: none;
-        max-height: 95vh;
-        padding: 15px !important;
-        margin: 0 auto 15px auto;
-        flex-shrink: 0;
-        align-self: center;
-        order: 3;
+        width: 95vw; /* Use viewport width for better mobile fit */
+        max-width: 480px; /* Reasonable max width for mobile */
+        padding: 20px;
     }
 
-    .hijri-date {
-        font-size: 0.9rem;
-        padding: 8px 12px;
-        margin-top: 10px;
+    .digital-clock {
+        font-size: 2rem; /* Scale down from desktop */
+    }
+
+    .clock-canvas {
+        width: 400px; /* Fixed size for consistency */
+        height: 450px;
+        max-width: 85vw; /* Responsive but with limits */
+    }
+
+    .hijri-date,
+    .location-info {
+        font-size: 0.9rem; /* Slightly smaller text */
     }
 
     .settings-menu {
-        order: 1;
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        z-index: 1000;
+        top: 15px;
+        left: 15px;
+    }
+
+    .settings-toggle {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
     }
 }
 
-/* Additional mobile breakpoint for smaller screens */
 @media (max-width: 400px) {
-    body {
-        padding: 5px;
-        justify-content: flex-start !important;
-    }
+    /* Small screens: Further scale down while maintaining design */
 
     .page-title {
         font-size: 1.6rem;
-        margin-bottom: 15px;
-        width: 100%;
-        text-align: center;
-    }
-
-    .clock-canvas {
-        width: 280px !important;
-        height: 320px !important;
-        max-width: calc(100vw - 30px);
-        max-height: calc(60vh);
-        /* Enhanced Firefox mobile support for small screens */
-        image-rendering: optimizeQuality;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: crisp-edges;
-        transform: translate3d(0, 0, 0);
-        backface-visibility: hidden;
-        will-change: transform;
-        box-sizing: border-box !important;
-        display: block !important;
-        margin: 0 auto !important;
-        overflow: hidden !important;
     }
 
     .clock-container {
-        width: 98% !important;
-        max-width: none !important;
-        padding: 12px !important;
-        margin: 10px auto 10px auto;
+        padding: 15px;
     }
 
     .digital-clock {
-        font-size: 1.8rem;
+        font-size: 1.7rem;
     }
 
-    .settings-menu {
-        top: 5px;
-        left: 5px;
-    }
-}
-
-/* Mobile Browser Canvas Fixes */
-@media (max-width: 768px) {
-    .page-title {
-        display: block !important;
-        width: 100% !important;
-        margin: 0 auto 20px auto !important;
-        text-align: center !important;
-        clear: both;
-    }
-
-    .clock-container {
-        display: block !important;
-        width: 98% !important;
-        margin: 0 auto !important;
-        clear: both;
-        float: none !important;
-    }
-
-    /* Mobile canvas optimizations for all browsers */
     .clock-canvas {
-        width: 400px !important;
-        height: 450px !important;
-        max-width: calc(100vw - 50px) !important;
-        max-height: calc(65vh) !important;
-        display: block !important;
-        margin: 0 auto !important;
-        image-rendering: crisp-edges !important;
-        image-rendering: -webkit-optimize-contrast !important;
-        image-rendering: -moz-crisp-edges !important;
-        transform: translateZ(0) !important; /* Force hardware acceleration */
-        will-change: transform !important;
+        width: 320px;
+        height: 360px;
+        max-width: 90vw;
     }
 
-    .analog-clock {
-        display: block !important;
-        width: 100% !important;
-        text-align: center !important;
-        overflow: hidden !important;
+    .hijri-date,
+    .location-info {
+        font-size: 0.85rem;
+    }
+
+    .settings-toggle {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
     }
 }
 
-@media (max-width: 400px) {
-    .page-title {
-        font-size: 1.6rem !important;
-        margin-bottom: 15px !important;
-    }
 
-    /* Mobile small screen canvas optimizations */
-    .clock-canvas {
-        width: 260px !important;
-        height: 300px !important;
-        max-width: calc(100vw - 40px) !important;
-        max-height: calc(55vh) !important;
-    }
-}
-
-/* Additional Mobile Layout Fix */
-@media screen and (max-width: 768px) {
-    body {
-        -webkit-box-orient: vertical !important;
-        -webkit-box-direction: normal !important;
-        -ms-flex-direction: column !important;
-        flex-direction: column !important;
-    }
-
-    .page-title,
-    .clock-container {
-        -webkit-box-flex: 0 !important;
-        -ms-flex: 0 0 auto !important;
-        flex: 0 0 auto !important;
-    }
-}
-
-/* Mobile Browser Universal Fix */
-@media screen and (max-width: 768px) and (orientation: portrait),
-       screen and (max-width: 1024px) and (orientation: landscape) and (max-height: 768px) {
-
-    /* Force block layout on problematic mobile browsers */
-    body {
-        display: flex !important;
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        align-items: stretch !important;
-        justify-content: flex-start !important;
-        min-height: 100vh !important;
-        padding: 10px !important;
-        box-sizing: border-box !important;
-    }
-
-    .page-title {
-        order: 1 !important;
-        flex: 0 0 auto !important;
-        width: 100% !important;
-        text-align: center !important;
-        margin: 0 0 20px 0 !important;
-        padding: 0 10px !important;
-        box-sizing: border-box !important;
-    }
-
-    .clock-container {
-        order: 2 !important;
-        flex: 0 0 auto !important;
-        width: 98% !important;
-        max-width: none !important;
-        margin: 0 auto !important;
-        box-sizing: border-box !important;
-    }
-
-    .settings-menu {
-        order: 0 !important; /* Keep settings at top */
-        flex: 0 0 auto !important;
-    }
-}
 
 /* RTL styles */
 body[dir="rtl"] {
@@ -788,47 +621,36 @@ input:checked + .toggle-slider:before {
     transform: translateX(-26px);
 }
 
-/* Viewport and responsive improvements */
 @media screen and (max-width: 320px) {
-    /* Ultra-small screens (iPhone SE, etc.) */
-    body {
-        font-size: 14px;
-        padding: 2px;
-    }
+    /* Ultra-small screens: Minimal adjustments only */
 
     .page-title {
         font-size: 1.4rem;
-        margin-bottom: 10px;
     }
 
     .clock-canvas {
-        width: 250px !important;
-        height: 280px !important;
-        max-width: calc(100vw - 20px);
-    }
-
-    .clock-container {
-        padding: 8px !important;
-        margin: 5px auto;
+        width: 280px;
+        height: 320px;
+        max-width: 95vw;
     }
 
     .digital-clock {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
     }
 
     .settings-toggle {
         width: 35px;
         height: 35px;
-        font-size: 1rem;
+        font-size: 16px;
     }
 }
 
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
-    /* Touch devices */
+    /* Touch devices: Ensure touch targets are large enough */
     .settings-toggle,
     .settings-btn {
-        min-height: 44px; /* iOS/Android touch target minimum */
+        min-height: 44px;
     }
 
     .toggle-switch {
@@ -836,69 +658,6 @@ input:checked + .toggle-slider:before {
         display: flex;
         align-items: center;
     }
-
-    .prayer-time {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-    }
 }
 
-/* Dark mode improvements for mobile */
-@media (prefers-color-scheme: dark) and (max-width: 768px) {
-    body {
-        background: #0a0a0a;
-    }
 
-    .prayer-times,
-    .progress-section {
-        background: rgba(255, 255, 255, 0.02);
-        border-color: rgba(212, 175, 55, 0.4);
-    }
-}
-
-/* Mobile Canvas Container Optimization */
-@media (max-width: 768px) {
-    .analog-clock {
-        width: 100% !important;
-        height: auto !important;
-        overflow: hidden !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-
-    .clock-canvas {
-        flex-shrink: 0 !important;
-        position: relative !important;
-        z-index: 1 !important;
-    }
-
-    .clock-container {
-        overflow: hidden !important;
-        position: relative !important;
-    }
-
-    /* Prevent mobile zoom/scroll issues */
-    .clock-container,
-    .analog-clock,
-    .clock-canvas {
-        touch-action: manipulation !important;
-        user-select: none !important;
-        -moz-user-select: none !important;
-        -webkit-user-select: none !important;
-        -ms-user-select: none !important;
-    }
-}
-
-@media (max-width: 400px) {
-    .analog-clock {
-        padding: 5px !important;
-    }
-
-    .clock-canvas {
-        border-width: 2px !important;
-        border-radius: 10px !important;
-    }
-}
