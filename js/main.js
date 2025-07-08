@@ -21,6 +21,7 @@ class IslamicPrayerClock {
 			showProgress: localStorage.getItem('showProgress') !== 'false', // true by default
 			prayerOffsets: JSON.parse(localStorage.getItem('prayerOffsets') || '{"Fajr":0,"Sunrise":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0}'),
 			prayerTimes: null,
+			originalPrayerTimes: null, // Store original times from API (before offsets/DST)
 			location: null,
 			animationId: null,
 			lastFetchDate: null, // Track last fetch date
@@ -475,6 +476,9 @@ class IslamicPrayerClock {
 			const data = await response.json();
 
 			if (data.code === 200 && data.data && data.data.timings) {
+				// Store original times first (before any adjustments)
+				this.state.originalPrayerTimes = { ...data.data.timings };
+
 				// Apply prayer time offsets and daylight saving
 				this.state.prayerTimes = this.applyTimeAdjustments(data.data.timings);
 				this.state.lastFetchDate = today;
@@ -1657,72 +1661,48 @@ class IslamicPrayerClock {
 				this.state.forceRedraw = true;
 				this.drawAnalogClock();
 			}
-		}
-
-		// Refresh prayer times if method, DST, or offsets changed
+		}		// Refresh prayer times if method, DST, or offsets changed
 		if (methodChanged || dstChanged || offsetsChanged) {
 			// For immediate feedback with DST changes
-			if (dstChanged && !methodChanged && !offsetsChanged && this.state.prayerTimes) {
-				const newDstMinutes = newDaylightSaving * 60; // -60, 0, or +60 minutes
-				const oldDstMinutes = oldDaylightSaving * 60; // -60, 0, or +60 minutes
-				const netAdjustment = newDstMinutes - oldDstMinutes;
+			if (dstChanged && !methodChanged && !offsetsChanged && this.state.originalPrayerTimes) {
+				console.log('DST changed, reapplying adjustments to original times');
 
-				console.log(`DST Change: old=${oldDaylightSaving}, new=${newDaylightSaving}, adjustment=${netAdjustment} minutes`);
+				// Reapply all adjustments with new DST using original times
+				this.state.prayerTimes = this.applyTimeAdjustments(this.state.originalPrayerTimes);
 
-				if (netAdjustment !== 0) {
-					// Apply the DST difference immediately to current prayer times
-					const adjustedTimes = { ...this.state.prayerTimes };
-					Object.keys(adjustedTimes).forEach(prayer => {
-						if (adjustedTimes[prayer] && adjustedTimes[prayer].includes(':')) {
-							adjustedTimes[prayer] = this.adjustTimeByMinutes(adjustedTimes[prayer], netAdjustment);
-						}
-					});
-					this.state.prayerTimes = adjustedTimes;
+				// Update cache with new adjusted times
+				const today = new Date().toDateString();
+				const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
+				const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
+				this.setCache(newCacheKey, this.state.prayerTimes);
 
-					// Update cache with new DST-adjusted times
-					const today = new Date().toDateString();
-					const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
-					const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
-					this.setCache(newCacheKey, this.state.prayerTimes);
+				console.log('Prayer times adjusted with new DST:', this.state.prayerTimes);
 
-					// Immediately redraw the analog clock
-					if (this.state.clockType === 'analog') {
-						this.drawAnalogClock();
-					}
+				// Immediately redraw the analog clock
+				if (this.state.clockType === 'analog') {
+					this.state.forceRedraw = true;
+					this.drawAnalogClock();
 				}
 			}
 			// For offset changes, immediately reapply all adjustments to existing times
-			else if (offsetsChanged && !methodChanged && this.state.prayerTimes) {
-				// Try to get original times from cache and reapply all adjustments
-				const today = new Date().toDate
-				const baseCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}`;
+			else if (offsetsChanged && !methodChanged && this.state.originalPrayerTimes) {
+				console.log('Offsets changed, reapplying adjustments to original times');
 
-				// Look for any cached version for today with same method
-				let originalTimes = null;
-				for (const key of Object.keys(localStorage)) {
-					if (key.startsWith(baseCacheKey)) {
-						const cached = this.getFromCache(key);
-						if (cached) {
-							originalTimes = cached;
-							break;
-						}
-					}
-				}
+				// Reapply all adjustments with new offsets using original times
+				this.state.prayerTimes = this.applyTimeAdjustments(this.state.originalPrayerTimes);
 
-				if (originalTimes) {
-					// Reapply all adjustments with new offsets
-					this.state.prayerTimes = this.applyTimeAdjustments(originalTimes);
+				// Update cache with new adjusted times
+				const today = new Date().toDateString();
+				const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
+				const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
+				this.setCache(newCacheKey, this.state.prayerTimes);
 
-					// Update cache with new adjusted times
-					const today = new Date().toDateString();
-					const offsetsHash = btoa(JSON.stringify(this.state.prayerOffsets)).slice(0, 8);
-					const newCacheKey = `prayer-times-${this.state.location?.lat}-${this.state.location?.lng}-${today}-${this.state.calculationMethod}-${this.state.daylightSaving}-${offsetsHash}`;
-					this.setCache(newCacheKey, this.state.prayerTimes);
+				console.log('Prayer times adjusted with new offsets:', this.state.prayerTimes);
 
-					// Immediately redraw the analog clock
-					if (this.state.clockType === 'analog') {
-						this.drawAnalogClock();
-					}
+				// Immediately redraw the analog clock
+				if (this.state.clockType === 'analog') {
+					this.state.forceRedraw = true;
+					this.drawAnalogClock();
 				}
 			}
 
