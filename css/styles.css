@@ -78,14 +78,6 @@ body::before {
     letter-spacing: 5px;
 }
 
-.decoration-top {
-    /* margin-bottom: 2px; */
-}
-
-.decoration-bottom {
-    /* margin-top: 6px; */
-}
-
 .clock-title {
     font-size: 2rem;
     color: #2c5530;
@@ -300,13 +292,15 @@ body::before {
     }
     .digital-clock { font-size: 2.2rem; }
     .clock-canvas {
-        width: 300px !important;
-        height: 330px !important;
+        width: 450px !important;
+        height: 530px !important;
         max-width: calc(100% - 40px);
     }
     .clock-container {
         width: 98%;
+		height: auto !important;
         max-width: none;
+		max-height: 95vh;
         padding: 15px !important;
         margin: 0 auto;
         flex-shrink: 0; /* Prevent container from shrinking */
