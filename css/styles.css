@@ -169,6 +169,10 @@ body::before {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     background: #ffffff;
     border: 3px solid #d4af37;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
 }
 
 .toggle-btn {
@@ -243,12 +247,39 @@ body::before {
 @media (max-width: 768px) {
     .clock-title { font-size: 1.8rem; }
     .digital-clock { font-size: 2.2rem; }
-    .clock-canvas { width: 350px; height: 385px; }
-    .clock-container { max-width: 380px; }
+    .clock-canvas {
+        width: 300px !important;
+        height: 330px !important;
+        max-width: calc(100% - 40px);
+    }
+    .clock-container {
+        width: 98%;
+        max-width: none;
+        padding: 15px !important;
+        margin: 0 auto;
+    }
     .hijri-date {
         font-size: 0.9rem;
         padding: 8px 12px;
         margin-top: 10px;
+    }
+}
+
+/* Additional mobile breakpoint for smaller screens */
+@media (max-width: 400px) {
+    .clock-canvas {
+        width: 260px !important;
+        height: 286px !important;
+        max-width: calc(100% - 30px);
+    }
+    .clock-container {
+        width: 98% !important;
+        max-width: none !important;
+        padding: 12px !important;
+        margin: 10px auto;
+    }
+    .clock-title {
+        font-size: 1.3rem;
     }
 }
 
