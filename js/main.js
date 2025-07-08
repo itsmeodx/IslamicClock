@@ -280,8 +280,8 @@ class IslamicPrayerClock {
 		const rect = canvas.getBoundingClientRect();
 		const devicePixelRatio = window.devicePixelRatio || 1;
 
-		// Firefox mobile detection and specific handling
-		const isFirefoxMobile = navigator.userAgent.includes('Firefox') &&
+		// Mobile detection for general optimizations
+		const isMobile = window.innerWidth <= 768 ||
 			('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 		// Fallback to CSS computed dimensions if getBoundingClientRect returns 0
@@ -298,9 +298,9 @@ class IslamicPrayerClock {
 		width = Math.max(width, 200);
 		height = Math.max(height, 220);
 
-		// Firefox mobile specific adjustments
-		if (isFirefoxMobile && window.innerWidth <= 768) {
-			// Limit device pixel ratio on Firefox mobile to prevent rendering issues
+		// Mobile optimizations for all browsers
+		if (isMobile) {
+			// Limit device pixel ratio on mobile to prevent rendering issues
 			const adjustedPixelRatio = Math.min(devicePixelRatio, 2);
 
 			// Set the actual canvas size in memory (high resolution but limited)
@@ -311,7 +311,7 @@ class IslamicPrayerClock {
 			this.ctx.scale(adjustedPixelRatio, adjustedPixelRatio);
 			this.canvasScale = adjustedPixelRatio;
 		} else {
-			// Standard handling for other browsers
+			// Standard handling for desktop
 			canvas.width = width * devicePixelRatio;
 			canvas.height = height * devicePixelRatio;
 			this.ctx.scale(devicePixelRatio, devicePixelRatio);
@@ -322,8 +322,8 @@ class IslamicPrayerClock {
 		canvas.style.width = width + 'px';
 		canvas.style.height = height + 'px';
 
-		// Firefox mobile specific optimizations
-		if (isFirefoxMobile) {
+		// Mobile optimizations for all browsers
+		if (isMobile) {
 			canvas.style.imageRendering = 'crisp-edges';
 			canvas.style.transform = 'translateZ(0)';
 			canvas.style.willChange = 'transform';
