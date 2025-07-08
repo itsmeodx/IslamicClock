@@ -9,7 +9,7 @@ class IslamicPrayerClock {
 			defaultLocation: { lat: 21.4225, lng: 39.8262 }, // Mecca
 			rateLimitDelay: 60000, // 1 minute delay between failed API calls
 			maxRetries: 3, // Maximum API retry attempts
-			defaultCalculationMethod: 2 // ISNA by default
+			defaultCalculationMethod: 21 // Morocco by default
 		};
 
 		// State
@@ -20,6 +20,7 @@ class IslamicPrayerClock {
 			daylightSaving: parseInt(localStorage.getItem('daylightSaving') || '0'), // -1, 0, or 1
 			showProgress: localStorage.getItem('showProgress') !== 'false', // true by default
 			prayerOffsets: JSON.parse(localStorage.getItem('prayerOffsets') || '{"Fajr":0,"Sunrise":0,"Dhuhr":0,"Asr":0,"Maghrib":0,"Isha":0}'),
+			hijriOffset: parseInt(localStorage.getItem('hijriOffset') || '0'), // -1, 0, or 1 days
 			prayerTimes: null,
 			originalPrayerTimes: null, // Store original times from API (before offsets/DST)
 			location: null,
@@ -29,6 +30,7 @@ class IslamicPrayerClock {
 			lastApiCall: null, // Track last API call for rate limiting
 			retryCount: 0, // Track API retry attempts
 			hijriDate: null, // Store Hijri date
+			originalHijriDate: null, // Store original Hijri date without offset
 			lastHijriFetch: null, // Track last Hijri date fetch
 			lastHijriAttempt: null, // Track last Hijri fetch attempt
 			// Performance optimization variables
@@ -64,7 +66,9 @@ class IslamicPrayerClock {
 			dhuhrOffset: document.getElementById('dhuhr-offset'),
 			asrOffset: document.getElementById('asr-offset'),
 			maghribOffset: document.getElementById('maghrib-offset'),
-			ishaOffset: document.getElementById('isha-offset')
+			ishaOffset: document.getElementById('isha-offset'),
+			// Hijri date offset input
+			hijriOffset: document.getElementById('hijri-offset')
 		};
 
 		// Canvas context (cached)
@@ -101,166 +105,19 @@ class IslamicPrayerClock {
 			ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
 		};
 
-		// Translation system
-		this.translations = {
-			en: {
-				title: '🕌 Islamic Prayer Clock',
-				switchToDigital: 'Switch to Digital',
-				switchToPrayerClock: 'Switch to Prayer Clock',
-				languageButton: 'العربية',
-				loading: 'Loading...',
-				gettingLocation: '📍 Getting location...',
-				hijriLoading: '🌙 Loading...',
-				hijriError: '🌙 Failed to load Hijri date',
-				nextPrayer: 'Next',
-				remaining: 'remaining',
-				complete: 'Complete',
-				defaultLocation: 'Mecca, Saudi Arabia',
-				// Weekdays for digital display
-				weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-				// Months for digital display
-				months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-				// Prayer names (for display)
-				prayers: {
-					Fajr: 'Fajr',
-					Sunrise: 'Sunrise',
-					Dhuhr: 'Dhuhr',
-					Asr: 'Asr',
-					Maghrib: 'Maghrib',
-					Isha: 'Isha',
-					Midnight: 'Midnight'
-				},
-				// Settings menu translations
-				settings: 'Settings',
-				language: 'Language',
-				clockMode: 'Clock Mode',
-				digital: 'Digital',
-				analog: 'Analog',
-				calculationMethod: 'Calculation Method',
-				daylightSaving: 'Daylight Saving Time',
-				dstMinus1Hour: '-1 Hour',
-				dstOff: 'Off',
-				dstPlus1Hour: '+1 Hour',
-				progressSection: 'Show Progress Section',
-				progressHide: 'Hide',
-				progressShow: 'Show',
-				prayerTimeAdjustments: 'Prayer Time Adjustments (minutes)',
-				save: 'Save',
-				reset: 'Reset',
-				refresh: 'Refresh',
-				// Calculation method names
-				calculationMethods: {
-					0: 'Shia Ithna-Ashari, Leva Institute, Qum',
-					1: 'University of Islamic Sciences, Karachi',
-					2: 'Islamic Society of North America (ISNA)',
-					3: 'Muslim World League',
-					4: 'Umm Al-Qura University, Makkah',
-					5: 'Egyptian General Authority of Survey',
-					7: 'Institute of Geophysics, University of Tehran',
-					8: 'Gulf Region',
-					9: 'Kuwait',
-					10: 'Qatar',
-					11: 'Majlis Ugama Islam Singapura, Singapore',
-					12: 'Union Organization Islamic de France',
-					13: 'Diyanet İşleri Başkanlığı, Turkey',
-					14: 'Spiritual Administration of Muslims of Russia',
-					15: 'Moonsighting Committee Worldwide (Moonsighting.com)',
-					16: 'Dubai (experimental)',
-					17: 'Jabatan Kemajuan Islam Malaysia (JAKIM)',
-					18: 'Tunisia',
-					19: 'Algeria',
-					20: 'Kementerian Agama Republik Indonesia',
-					21: 'Morocco',
-					22: 'Comunidade Islamica de Lisboa',
-					23: 'Ministry of Awqaf, Islamic Affairs and Holy Places, Jordan'
-				}
-			},
-			ar: {
-				title: '🕌 ساعة الصلاة الإسلامية',
-				switchToDigital: 'تحويل إلى الرقمي',
-				switchToPrayerClock: 'تحويل إلى ساعة الصلاة',
-				languageButton: 'English',
-				loading: 'جاري التحميل...',
-				gettingLocation: '📍 جاري تحديد الموقع...',
-				hijriLoading: '🌙 جاري التحميل...',
-				hijriError: '🌙 فشل في تحميل التاريخ الهجري',
-				nextPrayer: 'التالي',
-				remaining: 'متبقي',
-				complete: 'مكتمل',
-				defaultLocation: 'مكة المكرمة، السعودية',
-				// Weekdays for digital display
-				weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
-				// Months for digital display
-				months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
-				// Prayer names (for display)
-				prayers: {
-					Fajr: 'الفجر',
-					Sunrise: 'الشروق',
-					Dhuhr: 'الظهر',
-					Asr: 'العصر',
-					Maghrib: 'المغرب',
-					Isha: 'العشاء',
-					Midnight: 'منتصف الليل'
-				},
-				// Settings menu translations
-				settings: 'الإعدادات',
-				language: 'اللغة',
-				clockMode: 'وضع الساعة',
-				digital: 'رقمية',
-				analog: 'تناظرية',
-				calculationMethod: 'طريقة الحساب',
-				daylightSaving: 'التوقيت الصيفي',
-				dstMinus1Hour: '- ١ ساعة',
-				dstOff: 'معطل',
-				dstPlus1Hour: '+ ١ ساعة',
-				progressSection: 'إظهار قسم التقدم',
-				progressHide: 'إخفاء',
-				progressShow: 'إظهار',
-				prayerTimeAdjustments: 'تعديل أوقات الصلاة (بالدقائق)',
-				save: 'حفظ',
-				reset: 'إعادة تعيين',
-				refresh: 'تحديث',
-				// Calculation method names
-				calculationMethods: {
-					0: 'الشيعة الإثنا عشرية، معهد ليفا، قم',
-					1: 'جامعة العلوم الإسلامية، كراتشي',
-					2: 'الجمعية الإسلامية لأمريكا الشمالية (ISNA)',
-					3: 'رابطة العالم الإسلامي',
-					4: 'جامعة أم القرى، مكة المكرمة',
-					5: 'الهيئة المصرية العامة للمساحة',
-					7: 'معهد الجيوفيزياء، جامعة طهران',
-					8: 'منطقة الخليج',
-					9: 'الكويت',
-					10: 'قطر',
-					11: 'مجلس الأوقاف الإسلامية، سنغافورة',
-					12: 'الاتحاد الإسلامي الفرنسي',
-					13: 'رئاسة الشؤون الدينية، تركيا',
-					14: 'الإدارة الروحية لمسلمي روسيا',
-					15: 'لجنة مراقبة الهلال العالمية (Moonsighting.com)',
-					16: 'دبي (تجريبي)',
-					17: 'دائرة التنمية الإسلامية الماليزية (JAKIM)',
-					18: 'تونس',
-					19: 'الجزائر',
-					20: 'وزارة الشؤون الدينية الإندونيسية',
-					21: 'المغرب',
-					22: 'الجالية الإسلامية في لشبونة',
-					23: 'وزارة الأوقاف والشؤون الإسلامية والمقدسات، الأردن'
-				}
-			}
-		};
-
 		this.init();
 	}
 
 	// Get translated text
 	getText(key) {
-		return this.translations[this.state.language][key] || this.translations.en[key] || key;
+		return Translations[this.state.language][key] || Translations.en[key] || key;
 	} async init() {
 		try {
 			this.setupEventListeners();
 			this.setupHighDPICanvas(); // Setup high-DPI canvas support
 			this.updateLanguageDisplay(); // Set up translations first
 			this.updateClockDisplay();
+			this.enforceWesternNumeralsInInputs(); // Ensure Western numerals in inputs
 			await this.initializeLocation();
 			await this.fetchPrayerTimes(); // This now also fetches Hijri date
 			this.state.isInitialized = true;
@@ -336,6 +193,36 @@ class IslamicPrayerClock {
 		this.dom.saveSettings.addEventListener('click', () => this.saveSettings());
 		this.dom.resetSettings.addEventListener('click', () => this.resetSettings());
 		this.dom.refreshData.addEventListener('click', () => this.refreshData());
+
+		// Add direct event listener for Hijri offset changes
+		this.dom.hijriOffset.addEventListener('change', () => {
+			const newHijriOffset = parseInt(this.dom.hijriOffset.value) || 0;
+			if (newHijriOffset !== this.state.hijriOffset) {
+				console.log('Hijri offset changed directly:', newHijriOffset);
+				this.state.hijriOffset = newHijriOffset;
+				localStorage.setItem('hijriOffset', newHijriOffset.toString());
+
+				// Simply update the display with the new offset applied on-the-fly
+				console.log('Updating Hijri date display with new offset:', this.state.hijriOffset);
+				this.updateHijriDate();
+			}
+		});
+
+		// Add event listeners to number inputs to ensure Western numerals
+		const numberInputs = document.querySelectorAll('input[type="number"]');
+		numberInputs.forEach(input => {
+			// Force Western numerals on focus
+			input.addEventListener('focus', () => {
+				input.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+				input.style.unicodeBidi = 'plaintext';
+			});
+
+			// Ensure Western numerals on input event
+			input.addEventListener('input', () => {
+				input.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+				input.style.unicodeBidi = 'plaintext';
+			});
+		});
 
 		// Close settings menu when clicking outside
 		document.addEventListener('click', (e) => {
@@ -520,6 +407,16 @@ class IslamicPrayerClock {
 	// Process Hijri date from the prayer times API response
 	processHijriDateFromAPI(hijriData, today) {
 		try {
+			// Cache the original hijri data for later offset adjustments
+			if (hijriData) {
+				const cacheKey = `hijri-date-${today}`;
+				localStorage.setItem(cacheKey, JSON.stringify(hijriData));
+
+				// Store the original hijri data in our state
+				this.state.originalHijriDate = JSON.parse(JSON.stringify(hijriData));
+				console.log('Stored original Hijri data:', this.state.originalHijriDate);
+			}
+
 			// Get month index (1-12) and convert to array index (0-11)
 			const monthIndex = parseInt(hijriData.month.number) - 1;
 
@@ -778,6 +675,10 @@ class IslamicPrayerClock {
 		if (maghribLabel) maghribLabel.textContent = this.getText('prayers').Maghrib + ':';
 		if (ishaLabel) ishaLabel.textContent = this.getText('prayers').Isha + ':';
 
+		// Update hijri offset label
+		const hijriOffsetLabel = document.getElementById('hijri-offset-label');
+		if (hijriOffsetLabel) hijriOffsetLabel.textContent = this.getText('hijriOffset') + ':';
+
 		// Update calculation method dropdown options
 		const calculationMethodSelect = this.dom.calculationMethod;
 		if (calculationMethodSelect) {
@@ -803,11 +704,30 @@ class IslamicPrayerClock {
 			if (options[2]) options[2].textContent = this.getText('dstPlus1Hour');
 		}
 
+		// Update hijri offset dropdown options
+		const hijriOffsetSelect = this.dom.hijriOffset;
+		if (hijriOffsetSelect) {
+			console.log('Updating Hijri offset dropdown translations for language:', this.state.language);
+			const options = hijriOffsetSelect.getElementsByTagName('option');
+			if (options[0]) options[0].textContent = this.getText('hijriMinus1Day');
+			if (options[1]) options[1].textContent = this.getText('hijriNoChange');
+			if (options[2]) options[2].textContent = this.getText('hijriPlus1Day');
+		}
+
 		// Update progress toggle labels
 		const progressHideLabel = document.getElementById('progress-hide-label');
 		const progressShowLabel = document.getElementById('progress-show-label');
 		if (progressHideLabel) progressHideLabel.textContent = this.getText('progressHide');
 		if (progressShowLabel) progressShowLabel.textContent = this.getText('progressShow');
+
+		// Make sure Hijri date display is updated when language changes
+		if (this.state.hijriDate) {
+			console.log('Language changed, updating Hijri date display');
+			this.updateHijriDate();
+		}
+
+		// Ensure all number inputs use Western numerals
+		setTimeout(() => this.enforceWesternNumeralsInInputs(), 50);
 	}
 
 	updateClockDisplay() {
@@ -892,8 +812,8 @@ class IslamicPrayerClock {
 	}
 
 	formatDate(date) {
-		const weekdays = this.translations[this.state.language].weekdays;
-		const months = this.translations[this.state.language].months;
+		const weekdays = Translations[this.state.language].weekdays;
+		const months = Translations[this.state.language].months;
 
 		const weekday = weekdays[date.getDay()];
 		const month = months[date.getMonth()];
@@ -1581,13 +1501,16 @@ class IslamicPrayerClock {
 		this.dom.dstSelect.value = this.state.daylightSaving.toString();
 		this.dom.progressToggle.checked = this.state.showProgress;
 
-		// Set prayer offsets
+		// Set prayer offsets - always use Western numerals
 		this.dom.fajrOffset.value = this.state.prayerOffsets.Fajr;
 		this.dom.sunriseOffset.value = this.state.prayerOffsets.Sunrise;
 		this.dom.dhuhrOffset.value = this.state.prayerOffsets.Dhuhr;
 		this.dom.asrOffset.value = this.state.prayerOffsets.Asr;
 		this.dom.maghribOffset.value = this.state.prayerOffsets.Maghrib;
 		this.dom.ishaOffset.value = this.state.prayerOffsets.Isha;
+
+		// Set hijri date offset - always use Western numerals
+		this.dom.hijriOffset.value = this.state.hijriOffset.toString();
 	}
 
 	toggleSettingsMenu() {
@@ -1604,6 +1527,7 @@ class IslamicPrayerClock {
 		const newCalculationMethod = this.dom.calculationMethod.value;
 		const newDaylightSaving = parseInt(this.dom.dstSelect.value);
 		const newShowProgress = this.dom.progressToggle.checked;
+		const newHijriOffset = parseInt(this.dom.hijriOffset.value) || 0;
 		const newOffsets = {
 			Fajr: parseInt(this.dom.fajrOffset.value) || 0,
 			Sunrise: parseInt(this.dom.sunriseOffset.value) || 0,
@@ -1619,13 +1543,15 @@ class IslamicPrayerClock {
 		const dstChanged = newDaylightSaving !== this.state.daylightSaving;
 		const progressChanged = newShowProgress !== this.state.showProgress;
 		const offsetsChanged = JSON.stringify(newOffsets) !== JSON.stringify(this.state.prayerOffsets);
+		const hijriOffsetChanged = newHijriOffset !== this.state.hijriOffset;
 
 		console.log('Settings change detection:', {
 			languageChanged,
 			methodChanged: methodChanged ? `${this.state.calculationMethod} -> ${newCalculationMethod}` : false,
 			dstChanged,
 			progressChanged,
-			offsetsChanged
+			offsetsChanged,
+			hijriOffsetChanged
 		});
 
 		// Store old values for DST calculation before updating state
@@ -1637,6 +1563,7 @@ class IslamicPrayerClock {
 		this.state.daylightSaving = newDaylightSaving;
 		this.state.showProgress = newShowProgress;
 		this.state.prayerOffsets = newOffsets;
+		this.state.hijriOffset = newHijriOffset;
 
 		// Save to localStorage
 		localStorage.setItem('language', newLanguage);
@@ -1644,6 +1571,7 @@ class IslamicPrayerClock {
 		localStorage.setItem('daylightSaving', newDaylightSaving.toString());
 		localStorage.setItem('showProgress', newShowProgress.toString());
 		localStorage.setItem('prayerOffsets', JSON.stringify(newOffsets));
+		localStorage.setItem('hijriOffset', newHijriOffset.toString());
 
 		// Update UI if language changed
 		if (languageChanged) {
@@ -1658,7 +1586,12 @@ class IslamicPrayerClock {
 				this.state.forceRedraw = true;
 				this.drawAnalogClock();
 			}
-		}		// Refresh prayer times if method, DST, or offsets changed
+		}
+
+		// Ensure Western numerals in inputs (especially important after language change)
+		this.enforceWesternNumeralsInInputs();
+
+		// Refresh prayer times if method, DST, or offsets changed
 		if (methodChanged || dstChanged || offsetsChanged) {
 			// For immediate feedback with DST changes
 			if (dstChanged && !methodChanged && !offsetsChanged && this.state.originalPrayerTimes) {
@@ -1703,7 +1636,7 @@ class IslamicPrayerClock {
 				}
 			}
 
-			// Only make API calls if calculation method changed
+			// Only make API calls if
 			// For DST and offset changes, we can adjust existing times without new API calls
 			if (methodChanged) {
 				// Clear cached prayer times and fetch fresh ones for method changes
@@ -1728,6 +1661,13 @@ class IslamicPrayerClock {
 					this.drawAnalogClock();
 				}
 			}
+		}		// If hijri offset changed, update the hijri date display
+		if (hijriOffsetChanged && this.state.hijriDate) {
+			console.log('Hijri offset changed, updating display with new offset:', newHijriOffset);
+
+			// Since we're now applying offsets on-the-fly during display,
+			// we only need to update the display, not reprocess the data
+			this.updateHijriDate();
 		}
 
 		// Redraw analog clock if progress toggle changed
@@ -1746,6 +1686,7 @@ class IslamicPrayerClock {
 		this.state.calculationMethod = this.config.defaultCalculationMethod;
 		this.state.daylightSaving = 0;
 		this.state.showProgress = true;
+		this.state.hijriOffset = 0;
 		this.state.prayerOffsets = {
 			Fajr: 0, Sunrise: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0
 		};
@@ -1755,6 +1696,7 @@ class IslamicPrayerClock {
 		localStorage.setItem('calculationMethod', this.config.defaultCalculationMethod);
 		localStorage.setItem('daylightSaving', '0');
 		localStorage.setItem('showProgress', 'true');
+		localStorage.setItem('hijriOffset', '0');
 		localStorage.setItem('prayerOffsets', JSON.stringify(this.state.prayerOffsets));
 
 		// Update UI
@@ -1826,7 +1768,13 @@ class IslamicPrayerClock {
 
 	// Apply prayer time offsets and daylight saving adjustment
 	applyTimeAdjustments(prayerTimes) {
-		const adjustedTimes = { ...prayerTimes };
+		// Create a deep copy of the prayer times to avoid modifying the original
+		const adjustedTimes = JSON.parse(JSON.stringify(prayerTimes));
+
+		console.log('Applying time adjustments (offsets and DST) to prayer times:', {
+			offsets: this.state.prayerOffsets,
+			dst: this.state.daylightSaving
+		});
 
 		// Apply prayer-specific offsets
 		Object.keys(this.state.prayerOffsets).forEach(prayer => {
@@ -1873,7 +1821,6 @@ class IslamicPrayerClock {
 			return timeString; // Return original if error
 		}
 	}
-
 	updateHijriDate() {
 		if (!this.dom.hijriDate) {
 			console.error('Hijri date DOM element not found!');
@@ -1885,13 +1832,35 @@ class IslamicPrayerClock {
 			(this.state.hijriDate.monthAr || this.state.hijriDate.month) &&
 			this.state.hijriDate.year) {
 
+			// Apply the hijri offset on-the-fly for display only
+			let displayDay = parseInt(this.state.hijriDate.day);
+
+			// Apply offset if needed
+			if (this.state.hijriOffset !== 0) {
+				displayDay += this.state.hijriOffset;
+
+				// Handle month wrapping (simplified approach)
+				if (displayDay <= 0) {
+					displayDay = 29; // Assuming previous month has 29 days (simplified)
+				} else if (displayDay > 30) {
+					displayDay = 1; // Wrap to first day of next month
+				}
+			}
+
+			console.log('Displaying Hijri date with on-the-fly offset:', {
+				originalDay: this.state.hijriDate.day,
+				displayDay: displayDay,
+				offset: this.state.hijriOffset,
+				language: this.state.language
+			});
+
 			let monthName, weekdayName, day, year, hijriText;
 
 			if (this.state.language === 'ar') {
 				// Arabic format
 				monthName = this.state.hijriDate.monthAr || this.state.hijriDate.month;
 				weekdayName = this.state.hijriDate.weekdayAr || this.state.hijriDate.weekday || '';
-				day = this.toArabicNumerals(this.state.hijriDate.day);
+				day = this.toArabicNumerals(displayDay.toString());
 				year = this.toArabicNumerals(this.state.hijriDate.year);
 
 				// Format: "الاثنين ١٢ محرم ١٤٤٧ هـ"
@@ -1902,7 +1871,7 @@ class IslamicPrayerClock {
 				// English format
 				monthName = this.state.hijriDate.month;
 				weekdayName = this.state.hijriDate.weekday || '';
-				day = this.state.hijriDate.day;
+				day = displayDay.toString();
 				year = this.state.hijriDate.year;
 
 				// Format: "Monday 12 Muharram 1447 AH"
@@ -2043,6 +2012,38 @@ class IslamicPrayerClock {
 		} catch (error) {
 			console.error('Error clearing old caches:', error);
 		}
+	}
+
+	// Ensure number inputs always use Western numerals
+	enforceWesternNumeralsInInputs() {
+		console.log('Enforcing Western numerals in number inputs');
+		const numberInputs = document.querySelectorAll('input[type="number"]');
+
+		numberInputs.forEach(input => {
+			// Force Western numerals styling with inline styles
+			input.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important';
+			input.setAttribute('inputmode', 'numeric');
+
+			// Add event listeners to maintain Western numerals
+			input.addEventListener('input', function() {
+				// Ensure the displayed value uses Western numerals
+				const currentValue = this.value;
+
+				// Force redisplay if needed
+				if (document.documentElement.dir === 'rtl') {
+					// Force a redraw to maintain Western numerals
+					this.style.fontFeatureSettings = '"tnum"';
+					this.style.unicodeBidi = 'plaintext';
+				}
+			});
+
+			// Handle spinner buttons
+			input.addEventListener('mousedown', function(e) {
+				// Ensure spinners always increment with Western numerals
+				this.style.fontFeatureSettings = '"tnum"';
+				this.style.unicodeBidi = 'plaintext';
+			});
+		});
 	}
 }
 

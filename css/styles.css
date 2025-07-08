@@ -660,4 +660,50 @@ input:checked + .toggle-slider:before {
     }
 }
 
+/* Ensure number inputs always use Western numerals */
+input[type="number"] {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+    -webkit-font-feature-settings: "tnum" !important;
+    font-feature-settings: "tnum" !important;
+    -moz-font-feature-settings: "tnum" !important;
+    unicode-bidi: plaintext !important;
+}
+
+:root[dir="rtl"] input[type="number"] {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+    -webkit-font-feature-settings: "tnum" !important;
+    font-feature-settings: "tnum" !important;
+    -moz-font-feature-settings: "tnum" !important;
+    unicode-bidi: plaintext !important;
+}
+
+/* Ensure number input spinner buttons use Western numerals */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif !important;
+    opacity: 1 !important;
+}
+
+/* Override the default browser styling for RTL number inputs */
+:root[dir="rtl"] input[type="number"] {
+    direction: ltr !important; /* Force left-to-right display for numbers */
+    text-align: right !important; /* But align text to the right to match RTL layout */
+}
+
+/* Additional fix for spinner buttons in Firefox */
+@-moz-document url-prefix() {
+    input[type="number"] {
+        appearance: textfield !important;
+    }
+
+    /* Add custom spinner buttons for Firefox */
+    .offset-item {
+        position: relative;
+    }
+
+    .offset-item input[type="number"] {
+        padding-right: 20px !important;
+    }
+}
+
 

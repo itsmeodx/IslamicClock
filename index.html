@@ -146,6 +146,15 @@
             </div>
 
             <div class="settings-group">
+                <label for="hijri-offset" id="hijri-offset-label">Hijri Date Adjustment (days):</label>
+                <select id="hijri-offset">
+                    <option value="-1">-1 Day</option>
+                    <option value="0">No Change</option>
+                    <option value="1">+1 Day</option>
+                </select>
+            </div>
+
+            <div class="settings-group">
                 <label for="clock-mode-toggle" id="clock-mode-label">Clock Mode:</label>
                 <div class="toggle-container">
                     <span class="toggle-label-left" id="clock-mode-left-label">Digital</span>
@@ -181,6 +190,7 @@
         </div>
     </div>
 
+    <script src="js/translations.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
