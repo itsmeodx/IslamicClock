@@ -279,37 +279,58 @@ body::before {
         align-items: center !important;
         justify-content: flex-start !important;
         padding: 10px;
+        min-height: 100vh;
+        overflow-x: hidden;
     }
+
     .page-title {
         font-size: 2rem;
         margin-bottom: 20px;
         width: 100%;
         text-align: center;
+        order: 2;
     }
+
     .page-title::before,
     .page-title::after {
         display: none; /* Hide decorative elements on mobile */
     }
-    .digital-clock { font-size: 2.2rem; }
+
+    .digital-clock {
+        font-size: 2.2rem;
+    }
+
     .clock-canvas {
         width: 450px !important;
         height: 530px !important;
-        max-width: calc(100% - 40px);
+        max-width: calc(100vw - 40px);
+        max-height: calc(70vh);
     }
+
     .clock-container {
         width: 98%;
-		height: auto !important;
+        height: auto !important;
         max-width: none;
-		max-height: 95vh;
+        max-height: 95vh;
         padding: 15px !important;
-        margin: 0 auto;
-        flex-shrink: 0; /* Prevent container from shrinking */
-        align-self: center; /* Ensure it stays centered */
+        margin: 0 auto 15px auto;
+        flex-shrink: 0;
+        align-self: center;
+        order: 3;
     }
+
     .hijri-date {
         font-size: 0.9rem;
         padding: 8px 12px;
         margin-top: 10px;
+    }
+
+    .settings-menu {
+        order: 1;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
     }
 }
 
@@ -319,22 +340,35 @@ body::before {
         padding: 5px;
         justify-content: flex-start !important;
     }
+
     .page-title {
         font-size: 1.6rem;
         margin-bottom: 15px;
         width: 100%;
         text-align: center;
     }
+
     .clock-canvas {
-        width: 260px !important;
-        height: 286px !important;
-        max-width: calc(100% - 30px);
+        width: 280px !important;
+        height: 320px !important;
+        max-width: calc(100vw - 30px);
+        max-height: calc(60vh);
     }
+
     .clock-container {
         width: 98% !important;
         max-width: none !important;
         padding: 12px !important;
-        margin: 10px auto;
+        margin: 10px auto 10px auto;
+    }
+
+    .digital-clock {
+        font-size: 1.8rem;
+    }
+
+    .settings-menu {
+        top: 5px;
+        left: 5px;
     }
 }
 
@@ -711,4 +745,73 @@ input:checked + .toggle-slider:before {
 
 :root[dir="rtl"] input:checked + .toggle-slider:before {
     transform: translateX(-26px);
+}
+
+/* Viewport and responsive improvements */
+@media screen and (max-width: 320px) {
+    /* Ultra-small screens (iPhone SE, etc.) */
+    body {
+        font-size: 14px;
+        padding: 2px;
+    }
+
+    .page-title {
+        font-size: 1.4rem;
+        margin-bottom: 10px;
+    }
+
+    .clock-canvas {
+        width: 250px !important;
+        height: 280px !important;
+        max-width: calc(100vw - 20px);
+    }
+
+    .clock-container {
+        padding: 8px !important;
+        margin: 5px auto;
+    }
+
+    .digital-clock {
+        font-size: 1.6rem;
+    }
+
+    .settings-toggle {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Touch devices */
+    .settings-toggle,
+    .settings-btn {
+        min-height: 44px; /* iOS/Android touch target minimum */
+    }
+
+    .toggle-switch {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .prayer-time {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* Dark mode improvements for mobile */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+    body {
+        background: #0a0a0a;
+    }
+
+    .prayer-times,
+    .progress-section {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(212, 175, 55, 0.4);
+    }
 }
