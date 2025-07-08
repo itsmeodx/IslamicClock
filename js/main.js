@@ -256,7 +256,6 @@ class IslamicPrayerClock {
 		return this.translations[this.state.language][key] || this.translations.en[key] || key;
 	} async init() {
 		try {
-			console.log('Starting initialization...');
 			this.setupEventListeners();
 			this.setupHighDPICanvas(); // Setup high-DPI canvas support
 			this.updateLanguageDisplay(); // Set up translations first
@@ -265,13 +264,11 @@ class IslamicPrayerClock {
 			await this.fetchPrayerTimes(); // This now also fetches Hijri date
 			this.state.isInitialized = true;
 			this.startClock();
-			console.log('Initialization complete');
 		} catch (error) {
 			console.error('Initialization error:', error);
 			this.state.isInitialized = true;
 			this.startClock(); // Start clock without prayer times - will only show current time
 			// Try to fetch Hijri date even if other initialization fails
-			console.log('Attempting Hijri date fetch after initialization error...');
 			this.fetchHijriDate(); // Fallback to separate call if needed
 		}
 	}
@@ -282,6 +279,10 @@ class IslamicPrayerClock {
 		const canvas = this.dom.canvas;
 		const rect = canvas.getBoundingClientRect();
 		const devicePixelRatio = window.devicePixelRatio || 1;
+
+		// Firefox mobile detection and specific handling
+		const isFirefoxMobile = navigator.userAgent.includes('Firefox') &&
+			('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 		// Fallback to CSS computed dimensions if getBoundingClientRect returns 0
 		let width = rect.width;
@@ -297,19 +298,36 @@ class IslamicPrayerClock {
 		width = Math.max(width, 200);
 		height = Math.max(height, 220);
 
-		// Set the actual canvas size in memory (high resolution)
-		canvas.width = width * devicePixelRatio;
-		canvas.height = height * devicePixelRatio;
+		// Firefox mobile specific adjustments
+		if (isFirefoxMobile && window.innerWidth <= 768) {
+			// Limit device pixel ratio on Firefox mobile to prevent rendering issues
+			const adjustedPixelRatio = Math.min(devicePixelRatio, 2);
+
+			// Set the actual canvas size in memory (high resolution but limited)
+			canvas.width = width * adjustedPixelRatio;
+			canvas.height = height * adjustedPixelRatio;
+
+			// Scale the drawing context
+			this.ctx.scale(adjustedPixelRatio, adjustedPixelRatio);
+			this.canvasScale = adjustedPixelRatio;
+		} else {
+			// Standard handling for other browsers
+			canvas.width = width * devicePixelRatio;
+			canvas.height = height * devicePixelRatio;
+			this.ctx.scale(devicePixelRatio, devicePixelRatio);
+			this.canvasScale = devicePixelRatio;
+		}
 
 		// Scale the canvas back down using CSS
 		canvas.style.width = width + 'px';
 		canvas.style.height = height + 'px';
 
-		// Scale the drawing context so everything draws at the correct size
-		this.ctx.scale(devicePixelRatio, devicePixelRatio);
-
-		// Store the scale factor for calculations
-		this.canvasScale = devicePixelRatio;
+		// Firefox mobile specific optimizations
+		if (isFirefoxMobile) {
+			canvas.style.imageRendering = 'crisp-edges';
+			canvas.style.transform = 'translateZ(0)';
+			canvas.style.willChange = 'transform';
+		}
 	} setupEventListeners() {
 		// Settings menu event listeners
 		this.dom.settingsToggle.addEventListener('click', () => this.toggleSettingsMenu());

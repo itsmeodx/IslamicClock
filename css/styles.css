@@ -281,6 +281,10 @@ body::before {
         padding: 10px;
         min-height: 100vh;
         overflow-x: hidden;
+        /* Firefox mobile specific */
+        -moz-text-size-adjust: none;
+        -webkit-text-size-adjust: none;
+        text-size-adjust: none;
     }
 
     .page-title {
@@ -305,6 +309,20 @@ body::before {
         height: 530px !important;
         max-width: calc(100vw - 40px);
         max-height: calc(70vh);
+        /* Firefox mobile canvas optimization */
+        image-rendering: optimizeQuality;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        transform: translate3d(0, 0, 0); /* Force GPU acceleration */
+        backface-visibility: hidden;
+        perspective: 1000px;
+        will-change: transform;
+        /* Prevent canvas overflow on Firefox mobile */
+        box-sizing: border-box !important;
+        display: block !important;
+        margin: 0 auto !important;
+        position: relative !important;
     }
 
     .clock-container {
@@ -353,6 +371,17 @@ body::before {
         height: 320px !important;
         max-width: calc(100vw - 30px);
         max-height: calc(60vh);
+        /* Enhanced Firefox mobile support for small screens */
+        image-rendering: optimizeQuality;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        box-sizing: border-box !important;
+        display: block !important;
+        margin: 0 auto !important;
+        overflow: hidden !important;
     }
 
     .clock-container {
@@ -394,6 +423,27 @@ body::before {
             clear: both;
             float: none !important;
         }
+
+        /* Firefox mobile canvas fixes */
+        .clock-canvas {
+            width: 400px !important;
+            height: 450px !important;
+            max-width: calc(100vw - 50px) !important;
+            max-height: calc(65vh) !important;
+            display: block !important;
+            margin: 0 auto !important;
+            image-rendering: -moz-crisp-edges !important;
+            image-rendering: crisp-edges !important;
+            transform: translateZ(0) !important; /* Force hardware acceleration */
+            will-change: transform !important;
+        }
+
+        .analog-clock {
+            display: block !important;
+            width: 100% !important;
+            text-align: center !important;
+            overflow: hidden !important;
+        }
     }
 
     @media (max-width: 400px) {
@@ -405,6 +455,14 @@ body::before {
         .page-title {
             font-size: 1.6rem !important;
             margin-bottom: 15px !important;
+        }
+
+        /* Firefox mobile small screen canvas fixes */
+        .clock-canvas {
+            width: 260px !important;
+            height: 300px !important;
+            max-width: calc(100vw - 40px) !important;
+            max-height: calc(55vh) !important;
         }
     }
 }
@@ -813,5 +871,52 @@ input:checked + .toggle-slider:before {
     .progress-section {
         background: rgba(255, 255, 255, 0.02);
         border-color: rgba(212, 175, 55, 0.4);
+    }
+}
+
+/* Firefox Mobile Canvas Container Fix */
+@-moz-document url-prefix() {
+    @media (max-width: 768px) {
+        .analog-clock {
+            width: 100% !important;
+            height: auto !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .clock-canvas {
+            flex-shrink: 0 !important;
+            position: relative !important;
+            z-index: 1 !important;
+        }
+
+        .clock-container {
+            overflow: hidden !important;
+            position: relative !important;
+        }
+
+        /* Prevent Firefox mobile zoom/scroll issues */
+        .clock-container,
+        .analog-clock,
+        .clock-canvas {
+            touch-action: manipulation !important;
+            user-select: none !important;
+            -moz-user-select: none !important;
+            -webkit-user-select: none !important;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .analog-clock {
+            padding: 5px !important;
+        }
+
+        .clock-canvas {
+            border-width: 2px !important;
+            border-radius: 10px !important;
+        }
     }
 }
