@@ -344,6 +344,108 @@ body::before {
     }
 }
 
+/* Firefox Mobile Specific Fixes */
+@supports (-moz-appearance: none) {
+    @media (max-width: 768px) {
+        body {
+            display: block !important; /* Fallback for Firefox mobile flexbox issues */
+        }
+
+        .page-title {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 auto 20px auto !important;
+            text-align: center !important;
+            clear: both;
+        }
+
+        .clock-container {
+            display: block !important;
+            width: 98% !important;
+            margin: 0 auto !important;
+            clear: both;
+            float: none !important;
+        }
+    }
+
+    @media (max-width: 400px) {
+        body {
+            display: block !important;
+            padding: 5px !important;
+        }
+
+        .page-title {
+            font-size: 1.6rem !important;
+            margin-bottom: 15px !important;
+        }
+    }
+}
+
+/* Additional Firefox Mobile Layout Fix */
+@media screen and (max-width: 768px) {
+    body {
+        -webkit-box-orient: vertical !important;
+        -webkit-box-direction: normal !important;
+        -ms-flex-direction: column !important;
+        flex-direction: column !important;
+
+        /* Firefox specific */
+        -moz-box-orient: vertical !important;
+        -moz-box-direction: normal !important;
+    }
+
+    .page-title,
+    .clock-container {
+        -webkit-box-flex: 0 !important;
+        -ms-flex: 0 0 auto !important;
+        flex: 0 0 auto !important;
+
+        /* Firefox specific */
+        -moz-box-flex: 0 !important;
+    }
+}
+
+/* Mobile Browser Universal Fix */
+@media screen and (max-width: 768px) and (orientation: portrait),
+       screen and (max-width: 1024px) and (orientation: landscape) and (max-height: 768px) {
+
+    /* Force block layout on problematic mobile browsers */
+    body {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        min-height: 100vh !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    .page-title {
+        order: 1 !important;
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        text-align: center !important;
+        margin: 0 0 20px 0 !important;
+        padding: 0 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    .clock-container {
+        order: 2 !important;
+        flex: 0 0 auto !important;
+        width: 98% !important;
+        max-width: none !important;
+        margin: 0 auto !important;
+        box-sizing: border-box !important;
+    }
+
+    .settings-menu {
+        order: 0 !important; /* Keep settings at top */
+        flex: 0 0 auto !important;
+    }
+}
+
 /* RTL styles */
 body[dir="rtl"] {
     font-family: Arial, Tahoma, sans-serif;
