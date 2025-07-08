@@ -282,9 +282,17 @@ body::before {
 }
 
 @media (max-width: 768px) {
+    body {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding: 10px;
+    }
     .page-title {
         font-size: 2rem;
         margin-bottom: 20px;
+        width: 100%;
+        text-align: center;
     }
     .page-title::before,
     .page-title::after {
@@ -301,6 +309,8 @@ body::before {
         max-width: none;
         padding: 15px !important;
         margin: 0 auto;
+        flex-shrink: 0; /* Prevent container from shrinking */
+        align-self: center; /* Ensure it stays centered */
     }
     .hijri-date {
         font-size: 0.9rem;
@@ -311,9 +321,15 @@ body::before {
 
 /* Additional mobile breakpoint for smaller screens */
 @media (max-width: 400px) {
+    body {
+        padding: 5px;
+        justify-content: flex-start !important;
+    }
     .page-title {
         font-size: 1.6rem;
         margin-bottom: 15px;
+        width: 100%;
+        text-align: center;
     }
     .clock-canvas {
         width: 260px !important;
