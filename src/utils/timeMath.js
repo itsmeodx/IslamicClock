@@ -115,11 +115,21 @@ export function getCurrentPrayerProgress(prayerTimes) {
   const h = hoursRemaining.toString().padStart(2, "0");
   const m = minsRemaining.toString().padStart(2, "0");
   const s = secsRemaining.toString().padStart(2, "0");
-  const countdownStr = `${h}:${m}:${s}`;
+  let countdownStr = `${h}:${m}:${s}`;
+
+  // Grace Period Logic: Keep previous prayer active for 30 mins after start
+  let passedMinutes = currentMinutes - prevNode.min;
+  if (passedMinutes < 0) passedMinutes += 24 * 60;
+
+  let displayNextName = nextNode.name;
+  if (passedMinutes < 30 && !prevNode.isMarker) {
+    displayNextName = prevNode.name;
+    countdownStr = "00:00:00";
+  }
 
   return {
     degree: currentDegree,
-    nextPrayer: nextNode.name,
+    nextPrayer: displayNextName,
     remainingTime: countdownStr,
     percentage: Math.round(percentage * 100),
     prevName: prevNode.name,
