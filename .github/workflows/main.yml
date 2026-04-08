@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -117,3 +117,17 @@ jobs:
           path: |
             chrome.zip
             firefox.xpi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Extension Build"
+          body: "This is an automated build of the Islamic Clock browser extensions."
+          draft: false
+          prerelease: true
+          files: |
+            chrome.zip
+            firefox.xpi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
