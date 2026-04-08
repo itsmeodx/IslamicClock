@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@400;700&family=Tenor+Sans&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&family=Tenor+Sans&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -9,14 +9,26 @@
   --color-heritage-bg: #0b1120;
   --color-heritage-glass: rgba(10, 25, 47, 0.4);
 
-  --font-arabic: "Alexandria", sans-serif;
-  --font-main: "Tenor Sans", "Alexandria", sans-serif;
+  --font-main: "Alexandria", sans-serif;
+  --font-numbers: "Tenor Sans", "Alexandria", sans-serif;
 }
 
 :root {
   background-color: var(--color-heritage-bg);
   color: #ffffff;
   font-family: var(--font-main);
+}
+
+/* Universal Typography: Everything starts with Alexandria */
+*,
+::before,
+::after {
+  font-family: var(--font-main);
+}
+
+/* High-Precision Digits: Unified Tenor Sans Stack */
+.tabular-nums {
+  font-family: var(--font-numbers) !important;
 }
 
 body {
@@ -27,7 +39,7 @@ body {
   background-position: center;
   background-attachment: fixed;
   color: #ffffff;
-  font-family: var(--font-serif);
+  font-family: var(--font-main);
 }
 
 body::before {
@@ -78,10 +90,6 @@ input[type="number"] {
 .geometric-bg {
   mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path d="M30 0l30 30-30 30-30-30z" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1"/></svg>');
   @apply absolute inset-0 opacity-10 pointer-events-none;
-}
-
-.font-arabic {
-  font-family: var(--font-arabic);
 }
 
 /* Custom Scrollbar for Settings Panel */
