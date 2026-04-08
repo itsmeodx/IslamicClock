@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+extension-dist
+chrome.zip
+firefox.xpi
 *.local
 
 # Editor directories and files
