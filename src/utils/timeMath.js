@@ -3,8 +3,8 @@ export const PRAYER_POSITIONS = [
   { name: "Asr", degree: 60 },
   { name: "Maghrib", degree: 90 },
   { name: "Isha", degree: 120 },
-  { name: "Firstthird", degree: 135, isMinor: true },
-  { name: "Midnight", degree: 180 },
+  { name: "Firstthird", degree: 150, isMinor: true },
+  { name: "Midnight", degree: 180, isMinor: true },
   { name: "Lastthird", degree: 210, isMinor: true },
   { name: "Fajr", degree: 240 },
   { name: "Sunrise", degree: 270 },
@@ -26,7 +26,7 @@ export function getCurrentPrayerProgress(prayerTimes) {
 
   // Map API times to our nodes, sorting them chronologically starting from midnight
   const chronologicalNodes = [
-    { name: "Midnight", degree: 180, isMarker: true },
+    { name: "Midnight", degree: 180, isMarker: true, isMinor: true },
     { name: "Lastthird", degree: 210, isMarker: true, isMinor: true },
     { name: "Fajr", degree: 240 },
     { name: "Sunrise", degree: 270 },
@@ -34,7 +34,7 @@ export function getCurrentPrayerProgress(prayerTimes) {
     { name: "Asr", degree: 60 },
     { name: "Maghrib", degree: 90 },
     { name: "Isha", degree: 120 },
-    { name: "Firstthird", degree: 135, isMarker: true, isMinor: true },
+    { name: "Firstthird", degree: 150, isMarker: true, isMinor: true },
   ];
 
   // Filter nodes that actually exist in the API response
