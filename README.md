@@ -9,8 +9,15 @@ This project was completely refactored from a vanilla HTML/JS setup to a modern,
 1. **Continuous Cyclical Dial**: Unlike standard 12-hour clocks, this application maps time onto a 24-hour sun/moon orbital track. The locations of Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha, and Midnight are dynamically plotted based on exact mathematical calculation using the Aladhan API.
 2. **Glassmorphism Aesthetic**: Beautiful, premium frosted-glass UI floating over a dynamic background.
 3. **PWA Support**: Installable on Android and iOS devices.
-4. **No Dependencies on Axios**: Uses pure native `fetch` for all API calls to keep bundle sizes minimal.
-5. **Caching System**: Caches Aladhan API responses in `localStorage` for 24 hours to reduce network requests.
+4. **Browser Extension**: Use it as a beautiful "New Tab" page.
+
+## Quick Download
+
+[<img src="https://lh4.ggpht.com/x-plP9YZXhCaiDkTKQ5S29PwLmdi4feEKrMOtQle4NuoOaUgKUMH9pPWIg91da3anhSmw-G8erEIuU0d" width="128" alt="Google Chrome" title="Download for Google Chrome">](https://github.com/itsmeodx/IslamicClock/releases/latest/download/chrome.zip)
+[<img src="https://www.mozilla.org/media/img/structured-data/logo-firefox-browser.fbc7ffbb50fd.png" width="128" alt="Mozilla Firefox" title="Download for Mozilla Firefox">](https://github.com/itsmeodx/IslamicClock/releases/latest/download/firefox.xpi)
+
+- **Chrome/Edge/Brave**: [Download the ZIP](https://github.com/itsmeodx/IslamicClock/releases), unzip, and load "unpacked" in `chrome://extensions`.
+- **Firefox**: [Download the XPI](https://github.com/itsmeodx/IslamicClock/releases), then load "temporary" in `about:debugging`.
 
 ## Component Architecture
 
@@ -18,9 +25,9 @@ This project was completely refactored from a vanilla HTML/JS setup to a modern,
 - `src/hooks/usePrayerTimes.js`: Handles caching, geographical location, and fetching exact timings from `api.aladhan.com`.
 - `src/utils/translations.js`: Comprehensive English & Arabic localization.
 
-## Deployment to GitHub Pages
+## Deployment
 
-This repository is configured to deploy automatically to GitHub Pages using GitHub Actions (`.github/workflows/deploy.yml`).
+This repository is configured to deploy automatically to GitHub Pages using a consolidated CI/CD pipeline (`.github/workflows/main.yml`).
 
 1. The Vite configuration is set with `base: '/IslamicClock/'`.
 2. Ensure that in your GitHub Repository settings, **Pages -> Build and deployment -> Source** is set to **GitHub Actions**.
@@ -29,6 +36,7 @@ This repository is configured to deploy automatically to GitHub Pages using GitH
 
 - `pnpm dev` - Starts local development server.
 - `pnpm build` - Builds for production.
+- `pnpm build:extension` - Builds the browser extension version.
 - `pnpm lint` - Runs ESLint.
 - `pnpm typecheck` - Runs TypeScript type checking.
 
