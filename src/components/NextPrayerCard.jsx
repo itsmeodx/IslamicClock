@@ -13,9 +13,12 @@ export default function NextPrayerCard() {
       <div className="geometric-bg opacity-10" />
 
       <div className="relative z-10 flex flex-col items-center">
-        <h3 className="text-4xl font-main font-bold heritage-gradient-text mb-2 leading-relaxed drop-shadow-[0_8px_15px_rgba(0,0,0,0.5)]">
+        <h3 className="text-4xl font-main font-bold heritage-gradient-text leading-relaxed drop-shadow-[0_8px_15px_rgba(0,0,0,0.5)]">
           {t.prayers[progress?.nextPrayer] || "..."}
         </h3>
+        <span className="text-xl text-white/50 uppercase font-bold tracking-[0.3em] mt-2 mb-2">
+          {progress?.isGracePeriod ? t.since : t.until}
+        </span>
 
         <span className="text-5xl sm:text-6xl font-extralight tabular-nums heritage-gradient-text pb-2 drop-shadow-[0_12px_30px_rgba(0,0,0,0.8)] tracking-[0.05em]">
           {progress?.remainingTime || "00:00:00"}

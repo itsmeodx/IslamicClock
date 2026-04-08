@@ -122,9 +122,19 @@ export function getCurrentPrayerProgress(prayerTimes) {
   if (passedMinutes < 0) passedMinutes += 24 * 60;
 
   let displayNextName = nextNode.name;
+  let isGracePeriod = false;
+
   if (passedMinutes < 30 && !prevNode.isMarker) {
     displayNextName = prevNode.name;
-    countdownStr = "00:00:00";
+    isGracePeriod = true;
+
+    // Show elapsed time instead of remaining
+    const hElapsed = Math.floor(passedMinutes / 60)
+      .toString()
+      .padStart(2, "0");
+    const mElapsed = (passedMinutes % 60).toString().padStart(2, "0");
+    const sElapsed = nowTime.getSeconds().toString().padStart(2, "0");
+    countdownStr = `${hElapsed}:${mElapsed}:${sElapsed}`;
   }
 
   return {
@@ -133,5 +143,6 @@ export function getCurrentPrayerProgress(prayerTimes) {
     remainingTime: countdownStr,
     percentage: Math.round(percentage * 100),
     prevName: prevNode.name,
+    isGracePeriod,
   };
 }
