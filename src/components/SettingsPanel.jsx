@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Settings, ChevronDown, Check, MapPin } from "lucide-react";
 import { translations } from "../utils/translations";
-import { useClock } from "../context/ClockContext";
+import { useClock } from "../hooks/useClock";
 import ConfirmationModal from "./ConfirmationModal";
 
 function CustomSelect({ label, value, options, onChange }) {
@@ -375,13 +375,17 @@ export default function SettingsPanel({ isOpen, onClose }) {
               onClose={() => setConfirmAction(null)}
               onConfirm={handleConfirm}
               isArabic={settings.language === "ar"}
-              title={confirmAction?.type === "resetAll" ? t.reset : t.resetLocation}
+              title={
+                confirmAction?.type === "resetAll" ? t.reset : t.resetLocation
+              }
               message={
                 confirmAction?.type === "resetAll"
                   ? t.confirmReset
                   : t.confirmResetLocation
               }
-              confirmText={confirmAction?.type === "resetAll" ? t.reset : t.resetLocation}
+              confirmText={
+                confirmAction?.type === "resetAll" ? t.reset : t.resetLocation
+              }
               cancelText={t.hide}
             />
           </motion.div>

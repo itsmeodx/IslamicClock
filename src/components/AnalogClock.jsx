@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PRAYER_POSITIONS, getCurrentPrayerProgress } from "../utils/timeMath";
 import { translations } from "../utils/translations";
-import { useClock } from "../context/ClockContext";
+import { useClock } from "../hooks/useClock";
 
 export default function AnalogClock() {
   const { prayerTimes, settings } = useClock();
+  const [progress, setProgress] = useState(() =>
+    getCurrentPrayerProgress(prayerTimes),
+  );
   const language = settings.language;
-  const [progress, setProgress] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setProgress(getCurrentPrayerProgress(prayerTimes));
     }, 1000);
 
-    setProgress(getCurrentPrayerProgress(prayerTimes));
     return () => clearInterval(timer);
   }, [prayerTimes]);
 
@@ -23,7 +24,7 @@ export default function AnalogClock() {
   const TRACK_RADIUS = 160;
 
   return (
-    <div className="relative w-full h-full max-w-[500px] aspect-square mx-auto flex items-center justify-center">
+    <div className="relative w-full h-full max-w-[500px] aspect-square flex items-center justify-center">
       {/* SVG LAYER */}
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}

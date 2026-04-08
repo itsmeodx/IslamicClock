@@ -9,7 +9,7 @@ export default function ConfirmationModal({
   message,
   confirmText,
   cancelText,
-  isArabic
+  isArabic,
 }) {
   return (
     <AnimatePresence>

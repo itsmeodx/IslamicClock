@@ -1,14 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
 import { usePrayerTimes } from "../hooks/usePrayerTimes";
 
-const ClockContext = createContext();
+// eslint-disable-next-line react-refresh/only-export-components
+export const ClockContext = createContext();
 
 export function ClockProvider({ children }) {
   const [settings, setSettings] = useState(() => {
@@ -88,12 +82,4 @@ export function ClockProvider({ children }) {
   return (
     <ClockContext.Provider value={value}>{children}</ClockContext.Provider>
   );
-}
-
-export function useClock() {
-  const context = useContext(ClockContext);
-  if (!context) {
-    throw new Error("useClock must be used within a ClockProvider");
-  }
-  return context;
 }

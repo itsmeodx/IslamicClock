@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClock } from "./context/ClockContext";
+import { useClock } from "./hooks/useClock";
 import SettingsPanel from "./components/SettingsPanel";
 import LocationRequest from "./components/LocationRequest";
 import AnalogClock from "./components/AnalogClock";
@@ -7,32 +7,34 @@ import DigitalClock from "./components/DigitalClock";
 import NextPrayerCard from "./components/NextPrayerCard";
 import DateDisplay from "./components/DateDisplay";
 import { translations } from "./utils/translations";
-import { getCurrentPrayerProgress } from "./utils/timeMath";
 import { MapPin, Settings } from "lucide-react";
 
 export default function App() {
   const {
     settings,
-    setSettings,
-    prayerTimes,
-    hijriDate,
     locationName,
     error,
     permissionStatus,
     requestLocation,
     setManualLocation,
-    refresh,
-    currentTime,
   } = useClock();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const t = translations[settings.language];
-  const progress = getCurrentPrayerProgress(prayerTimes);
 
   // If no location set (saved or current), or stuck in prompt, show request screen
-  if (permissionStatus === "prompt" || (permissionStatus === "denied" && !locationName)) {
-    return <LocationRequest t={t} onAllow={requestLocation} onManualSearch={setManualLocation} />;
+  if (
+    permissionStatus === "prompt" ||
+    (permissionStatus === "denied" && !locationName)
+  ) {
+    return (
+      <LocationRequest
+        t={t}
+        onAllow={requestLocation}
+        onManualSearch={setManualLocation}
+      />
+    );
   }
 
   return (
@@ -46,7 +48,7 @@ export default function App() {
       <div className="w-full max-w-5xl flex justify-between items-center z-10">
         <div>
           <h1 className="text-xl font-bold leading-tight mb-0.5">{t.title}</h1>
-          <p className="text-xs text-heritage-gold flex items-center gap-1 uppercase tracking-widest font-bold">
+          <p className="text-[8px] sm:text-xs text-heritage-gold/90 flex items-center gap-1 uppercase tracking-[0.18em] font-bold">
             <MapPin className="w-3 h-3" /> {locationName || "..."}
           </p>
         </div>
@@ -61,9 +63,9 @@ export default function App() {
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="w-full max-w-5xl flex flex-col lg:flex-row gap-8 items-stretch h-full">
+      <main className="w-full max-w-5xl flex flex-col lg:flex-row gap-6 sm:gap-8 items-stretch h-full">
         {settings.clockMode === "analog" ? (
-          <div className="flex-1 heritage-card flex flex-col items-center justify-center min-h-[400px]">
+          <div className="flex-1 heritage-card flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px]">
             <div className="geometric-bg opacity-10" />
             <AnalogClock />
           </div>
@@ -71,7 +73,7 @@ export default function App() {
           <DigitalClock />
         )}
 
-        <div className="w-full lg:w-[350px] flex flex-col gap-6">
+        <div className="w-full lg:w-[350px] grid grid-cols-2 lg:flex lg:flex-col gap-4 sm:gap-6">
           <NextPrayerCard />
           <DateDisplay />
         </div>

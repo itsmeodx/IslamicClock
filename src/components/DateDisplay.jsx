@@ -1,18 +1,6 @@
-import { Sun, Moon } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { localizeNumbers } from "../utils/numberUtils";
-import { useClock } from "../context/ClockContext";
-
-const InfoCard = ({ icon: Icon, text, textClass = "" }) => (
-  <div className="heritage-card p-5 flex items-center gap-4">
-    <div className="geometric-bg opacity-10" />
-    <Icon className="w-6 h-6 text-heritage-amber shrink-0 drop-shadow-sm" />
-    <p
-      className={`${textClass} heritage-gradient-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] leading-relaxed pb-1`}
-    >
-      {text}
-    </p>
-  </div>
-);
+import { useClock } from "../hooks/useClock";
 
 export default function DateDisplay() {
   const { hijriDate, currentTime, settings } = useClock();
@@ -33,17 +21,28 @@ export default function DateDisplay() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <InfoCard
-        icon={Moon}
-        text={formatHijri()}
-        textClass="text-xl font-main font-bold tracking-wide"
-      />
-      <InfoCard
-        icon={Sun}
-        text={gregorianDate}
-        textClass="text-lg font-main font-bold uppercase tracking-widest"
-      />
+    <div className="heritage-card flex-1 flex flex-col items-center justify-center text-center border-white/5 overflow-hidden min-h-[140px] sm:min-h-[250px] p-1.5 sm:p-6 transition-all duration-300">
+      <div className="geometric-bg opacity-10" />
+
+      <div className="relative z-10 flex flex-col items-center justify-center gap-1.5 sm:gap-4 h-full w-full">
+        {/* Hijri Sector */}
+        <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+          <Moon className="w-4 h-4 sm:w-6 sm:h-6 text-heritage-amber/80" />
+          <p className="text-xs sm:text-lg font-main font-bold heritage-gradient-text tracking-tight sm:tracking-wide">
+            {formatHijri()}
+          </p>
+        </div>
+
+        <div className="w-12 h-px bg-white/10 my-1 sm:my-4" />
+
+        {/* Gregorian Sector */}
+        <div className="flex flex-col items-center gap-1 sm:gap-1.5">
+          <Sun className="w-4 h-4 sm:w-6 sm:h-6 text-heritage-amber/80" />
+          <p className="text-xs sm:text-lg font-main font-bold uppercase heritage-gradient-text tracking-tight sm:tracking-widest">
+            {gregorianDate}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

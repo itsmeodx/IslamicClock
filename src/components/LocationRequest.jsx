@@ -20,40 +20,51 @@ export default function LocationRequest({ t, onAllow, onManualSearch }) {
 
   return (
     <div className="h-screen flex items-center justify-center p-4 overflow-hidden relative">
-      <div className="heritage-card text-center max-w-md w-full animate-in fade-in zoom-in duration-700 relative !overflow-visible -translate-y-20">
+      <div className="heritage-card text-center max-w-md w-full animate-in fade-in zoom-in duration-700 relative !overflow-visible">
         <div className="geometric-bg opacity-10" />
 
-        <div className="relative z-10">
-          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-xl backdrop-blur-md">
-            <MapPin className="w-10 h-10 text-heritage-amber" />
+        <div className="relative z-10 px-2">
+          <div className="w-14 h-14 sm:w-20 sm:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-white/20 shadow-xl backdrop-blur-md">
+            <MapPin className="w-7 h-7 sm:w-10 sm:h-10 text-heritage-amber" />
           </div>
 
-          <h2 className="text-3xl font-bold mb-3 tracking-tight">{t.locationRequired}</h2>
-          <p className="text-white/60 mb-10 text-base leading-relaxed max-w-[280px] mx-auto">{t.locationDesc}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3 tracking-tight">
+            {t.locationRequired}
+          </h2>
+          <p className="text-xs sm:text-base text-white/60 mb-6 sm:mb-10 leading-relaxed max-w-[280px] mx-auto">
+            {t.locationDesc}
+          </p>
 
-          <div className="space-y-8">
-            <button onClick={onAllow} className="heritage-button w-full py-4 text-lg flex items-center justify-center gap-3">
-              <MapPin className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <div className="space-y-6 sm:space-y-8">
+            <button
+              onClick={onAllow}
+              className="heritage-button w-full py-2 sm:py-4 text-sm sm:text-lg flex items-center justify-center gap-2 sm:gap-3"
+            >
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
               {t.allowLocation}
             </button>
 
             <div className="relative flex items-center">
               <div className="flex-grow border-t border-white/10" />
-              <span className="flex-shrink mx-4 text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">{t.or || "OR"}</span>
+              <span className="flex-shrink mx-4 text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">
+                {t.or || "OR"}
+              </span>
               <div className="flex-grow border-t border-white/10" />
             </div>
 
             <div className="relative">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-heritage-amber" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-heritage-amber" />
                 <input
                   type="text"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder={t.searchPlaceholder}
-                  className="heritage-input w-full !pl-12 !py-4 text-base"
+                  className="heritage-input w-full !pl-10 sm:!pl-12 !py-2.5 sm:!py-4 text-sm sm:text-base"
                 />
-                {isLoading && <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-heritage-amber animate-spin" />}
+                {isLoading && (
+                  <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-heritage-amber animate-spin" />
+                )}
               </div>
 
               {suggestions?.length > 0 && (
@@ -65,7 +76,13 @@ export default function LocationRequest({ t, onAllow, onManualSearch }) {
                     {suggestions.map((s, i) => (
                       <button
                         key={i}
-                        onClick={() => onManualSearch({ name: s.fullName || s.name, lat: s.lat, lng: s.lng })}
+                        onClick={() =>
+                          onManualSearch({
+                            name: s.fullName || s.name,
+                            lat: s.lat,
+                            lng: s.lng,
+                          })
+                        }
                         className="w-full text-start px-8 py-3.5 hover:bg-white/5 border-b border-white/5 last:border-0 transition-all group outline-none"
                       >
                         <div className="flex items-center gap-4">
@@ -75,7 +92,8 @@ export default function LocationRequest({ t, onAllow, onManualSearch }) {
                               {s.name || "Unknown City"}
                             </p>
                             <p className="text-[11px] text-white/40 uppercase tracking-[0.18em] font-medium">
-                              {s.fullName?.split(", ").slice(1).join(", ") || "Region details"}
+                              {s.fullName?.split(", ").slice(1).join(", ") ||
+                                "Region details"}
                             </p>
                           </div>
                         </div>

@@ -53,13 +53,13 @@ body::before {
 /* Heritage Utility Classes */
 
 .heritage-card {
-  @apply bg-slate-950/40 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-2xl p-8 relative overflow-hidden;
+  @apply bg-slate-950/40 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-2xl p-4 sm:p-8 relative overflow-hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 .heritage-card::before {
   content: "";
-  @apply absolute inset-2 border border-white/10 rounded-[2rem] pointer-events-none;
+  @apply absolute inset-1.5 sm:inset-2 border border-white/10 rounded-[2rem] pointer-events-none;
 }
 
 .heritage-button {
