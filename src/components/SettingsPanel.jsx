@@ -6,6 +6,7 @@ import { translations } from "../utils/translations";
 function CustomSelect({ label, value, options, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -19,6 +20,18 @@ function CustomSelect({ label, value, options, onChange }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Auto-scroll when opening if near bottom
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        dropdownRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }, 150);
+    }
+  }, [isOpen]);
 
   const selectedOption =
     options.find((opt) => opt.value === value) || options[0];
@@ -50,6 +63,7 @@ function CustomSelect({ label, value, options, onChange }) {
         <AnimatePresence>
           {isOpen && (
             <motion.div
+              ref={dropdownRef}
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -129,9 +143,11 @@ export default function SettingsPanel({
   ];
 
   const hijriOptions = [
+    { value: -2, label: t.hijriMinus2Days },
     { value: -1, label: t.hijriMinus1Day },
     { value: 0, label: t.hijriNoChange },
     { value: 1, label: t.hijriPlus1Day },
+    { value: 2, label: t.hijriPlus2Days },
   ];
 
   return (
