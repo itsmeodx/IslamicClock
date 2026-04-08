@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@import url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700;900&display=swap");
+
+@theme {
+  --color-heritage-indigo: #0a1128;
+  --color-heritage-amber: #ff9f1c;
+  --color-heritage-gold: #ffd700;
+  --color-heritage-green: #166534;
+  --color-heritage-bg: #0b1120;
+  --color-heritage-glass: rgba(10, 25, 47, 0.4);
+
+  --font-arabic: "Amiri", serif;
+  --font-serif: "Playfair Display", serif;
+}
+
+:root {
+  background-color: var(--color-heritage-bg);
+  color: #ffffff;
+  font-family: var(--font-serif);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-image: url("/bg-twilight.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: #ffffff;
+  font-family: var(--font-serif);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: -1;
+}
+
+/* Heritage Utility Classes */
+
+.heritage-card {
+  @apply bg-slate-950/40 backdrop-blur-2xl border border-white/20 rounded-[2.5rem] shadow-2xl p-8 relative overflow-hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.heritage-card::before {
+  content: "";
+  @apply absolute inset-2 border border-white/10 rounded-[2rem] pointer-events-none;
+}
+
+.heritage-button {
+  @apply bg-heritage-amber text-heritage-indigo px-8 py-3 rounded-xl font-bold transition-all duration-300 shadow-[0_0_20px_rgba(255,159,28,0.3)] hover:scale-105 hover:shadow-[0_0_30px_rgba(255,159,28,0.5)] active:scale-95;
+}
+
+.heritage-input {
+  @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/90 focus:border-heritage-gold/50 focus:bg-white/10 focus:ring-1 focus:ring-heritage-gold/30 focus:outline-none transition-all duration-300 backdrop-blur-md;
+}
+
+
+  /* Hide number input spinners */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+
+
+/* Islamic Geometric Pattern */
+.geometric-bg {
+  mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><path d="M30 0l30 30-30 30-30-30z" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.1"/></svg>');
+  @apply absolute inset-0 opacity-10 pointer-events-none;
+}
+
+.font-arabic {
+  font-family: var(--font-arabic);
+}
+
+/* Custom Scrollbar for Settings Panel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #ff9f1c; /* heritage-amber */
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ffd700; /* heritage-gold */
+}
+
