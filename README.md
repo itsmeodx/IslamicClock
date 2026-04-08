@@ -1,48 +1,94 @@
-# Modern Islamic Prayer Clock
+<div align="center">
+  <h1>Islamic Clock</h1>
 
-A continuous, cyclical analog prayer clock built with React, Vite, and Tailwind CSS.
+**A high-precision analog prayer dial for Chrome and Firefox.**
 
-This project was completely refactored from a vanilla HTML/JS setup to a modern, maintainable component-driven architecture, designed specifically to be hosted on GitHub Pages.
+[![GitHub Release](https://img.shields.io/github/v/release/itsmeodx/IslamicClock?label=Latest&color=blue)](https://github.com/itsmeodx/IslamicClock/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/itsmeodx/IslamicClock/main.yml?branch=main)](https://github.com/itsmeodx/IslamicClock/actions)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-## Core Features
+[Web App](https://itsmeodx.github.io/IslamicClock/) • [Browser Extensions](#installation) • [Releases](https://github.com/itsmeodx/IslamicClock/releases)
 
-1. **Continuous Cyclical Dial**: Unlike standard 12-hour clocks, this application maps time onto a 24-hour sun/moon orbital track. The locations of Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha, and Midnight are dynamically plotted based on exact mathematical calculation using the Aladhan API.
-2. **Glassmorphism Aesthetic**: Beautiful, premium frosted-glass UI floating over a dynamic background.
-3. **PWA Support**: Installable on Android and iOS devices.
-4. **Browser Extension**: Use it as a beautiful "New Tab" page.
+</div>
 
-## Quick Download
+---
 
-[<img src="https://lh4.ggpht.com/x-plP9YZXhCaiDkTKQ5S29PwLmdi4feEKrMOtQle4NuoOaUgKUMH9pPWIg91da3anhSmw-G8erEIuU0d" width="128" alt="Google Chrome" title="Download for Google Chrome">](https://github.com/itsmeodx/IslamicClock/releases/download/latest/chrome.zip)
-[<img src="https://www.mozilla.org/media/img/structured-data/logo-firefox-browser.fbc7ffbb50fd.png" width="128" alt="Mozilla Firefox" title="Download for Mozilla Firefox">](https://github.com/itsmeodx/IslamicClock/releases/download/latest/firefox.xpi)
+The Islamic Prayer Clock is a continuous astronomical dial that visualizes the passage of time according to the sun's orbital track. Unlike standard clocks, it maps the specific astronomical markers of prayer (Fajr, Dhuhr, Asr, Maghrib, Isha) onto a single cyclical path.
 
-- **Chrome/Edge/Brave**: Click the icon above to **Download the ZIP**, then extract it and select **"Load unpacked"** in `chrome://extensions`.
+## Table of Contents
+
+- [Table of Contents](#table-of-contents)
+- [Installation](#installation)
+  - [Browser Extension](#browser-extension)
+- [Key Features](#key-features)
+- [Building from Source](#building-from-source)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+  - [Build Commands](#build-commands)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
+
+## Installation
+
+### Browser Extension
+
+Installs as your browser's "New Tab" page.
+
+<p align="center">
+  <a href="https://github.com/itsmeodx/IslamicClock/releases/download/latest/chrome.zip">
+    <img src="https://lh4.ggpht.com/x-plP9YZXhCaiDkTKQ5S29PwLmdi4feEKrMOtQle4NuoOaUgKUMH9pPWIg91da3anhSmw-G8erEIuU0d" width="140" alt="Google Chrome" title="Download for Google Chrome">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/itsmeodx/IslamicClock/releases/download/latest/firefox.xpi">
+    <img src="https://www.mozilla.org/media/img/structured-data/logo-firefox-browser.fbc7ffbb50fd.png" width="140" alt="Mozilla Firefox" title="Download for Mozilla Firefox">
+  </a>
+</p>
+
+- **Chrome / Edge / Brave**: Click the icon above to **Download the ZIP**, then extract it and select **"Load unpacked"** in `chrome://extensions`.
 - **Firefox**: Click the icon above for **Instant Installation**, or go to [releases](https://github.com/itsmeodx/IslamicClock/releases), download the XPI file and drag it into any open Firefox window.
 
-## Component Architecture
+## Key Features
 
-- `src/components/AnalogClock.jsx`: Renders the orbital path and the 9 key astronomical markers.
-- `src/hooks/usePrayerTimes.js`: Handles caching, geographical location, and fetching exact timings from `api.aladhan.com`.
-- `src/utils/translations.js`: Comprehensive English & Arabic localization.
+- **Native Extension Support**: Dedicated optimized builds for Chrome, Edge, Brave, and Firefox.
+- **Mobile Ready (PWA)**: Installable Progressive Web App with full offline support.
 
-## Deployment
+## Building from Source
 
-This repository is configured to deploy automatically to GitHub Pages using a consolidated CI/CD pipeline (`.github/workflows/main.yml`).
+### Prerequisites
 
-1. The Vite configuration is set with `base: '/IslamicClock/'`.
-2. Ensure that in your GitHub Repository settings, **Pages -> Build and deployment -> Source** is set to **GitHub Actions**.
+- [Node.js](https://nodejs.org/) (v20 or higher)
+- [pnpm](https://pnpm.io/) (v9 or higher)
 
-## Scripts
+### Setup
 
-- `pnpm dev` - Starts local development server.
-- `pnpm build` - Builds for production.
-- `pnpm build:extension` - Builds the browser extension version.
-- `pnpm lint` - Runs ESLint.
-- `pnpm typecheck` - Runs TypeScript type checking.
+```bash
+# Clone the repository
+git clone https://github.com/itsmeodx/IslamicClock.git
+cd IslamicClock
 
-## Best Practices Implemented
+# Install dependencies
+pnpm install
 
-- Strict ES Modules usage.
-- Native APIs over bloated 3rd party packages.
-- Caching to prevent hitting HTTP rate limits.
-- Precise SVG drawing mathematics vs computationally heavy 2D Canvas redraws.
+# Start local development
+pnpm run dev
+```
+
+### Build Commands
+
+| Command                | Result                                                     |
+| :--------------------- | :--------------------------------------------------------- |
+| `pnpm build`           | Generates production web bundle in `dist/`                 |
+| `pnpm build:extension` | Packages extension artifacts (`chrome.zip`, `firefox.xpi`) |
+
+## Contributing
+
+Contributions are welcome! If you have suggestions for improvements or encounter bugs, please open an [issue](https://github.com/itsmeodx/IslamicClock/issues) or submit a pull request.
+
+## Support
+
+If you find this project useful, consider giving it a ⭐ on GitHub to show your support!
+
+## License
+
+Distributed under the GNU GPL v3 License. See `LICENSE` for more information.
