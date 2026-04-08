@@ -1,6 +1,10 @@
+import { translations } from "../utils/translations";
+import { useClock } from "../context/ClockContext";
 import { getCurrentPrayerProgress } from "../utils/timeMath";
 
-export default function DigitalClock({ prayerTimes, currentTime, t }) {
+export default function DigitalClock() {
+  const { prayerTimes, currentTime, settings } = useClock();
+  const t = translations[settings.language];
   const { nextPrayer } = getCurrentPrayerProgress(prayerTimes) || {};
 
   return (

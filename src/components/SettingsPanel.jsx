@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, ChevronDown, Check } from "lucide-react";
 import { translations } from "../utils/translations";
+import { useClock } from "../context/ClockContext";
 
 function CustomSelect({ label, value, options, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +42,7 @@ function CustomSelect({ label, value, options, onChange }) {
       className={`space-y-3 relative ${isOpen ? "z-50" : "z-10"}`}
       ref={containerRef}
     >
-      <label className="text-xs text-heritage-amber uppercase font-bold tracking-widest px-1">
+      <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
         {label}
       </label>
       <div className="relative">
@@ -100,15 +101,14 @@ function CustomSelect({ label, value, options, onChange }) {
   );
 }
 
-export default function SettingsPanel({
-  isOpen,
-  onClose,
-  settings,
-  onUpdate,
-  onRefresh,
-  onReset,
-}) {
+export default function SettingsPanel({ isOpen, onClose }) {
+  const { settings, setSettings, refresh, resetSettings } = useClock();
+  const onUpdate = setSettings;
+  const onRefresh = refresh;
+  const onReset = resetSettings;
+
   const t = translations[settings.language];
+  const [isOffsetsExpanded, setIsOffsetsExpanded] = useState(false);
 
   const handleChange = (key, value) => {
     onUpdate({ ...settings, [key]: value });
@@ -189,19 +189,19 @@ export default function SettingsPanel({
             <div className="flex-1 overflow-y-auto p-6 space-y-8 relative z-10 custom-scrollbar">
               {/* Language */}
               <div className="space-y-3">
-                <label className="text-xs text-heritage-amber uppercase font-bold tracking-widest px-1">
+                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
                   {t.language}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleChange("language", "en")}
-                    className={`p-3 rounded-xl border-2 transition-all font-bold ${settings.language === "en" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
+                    className={`py-2 px-3 rounded-lg border-2 transition-all font-bold text-sm ${settings.language === "en" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
                   >
                     English
                   </button>
                   <button
                     onClick={() => handleChange("language", "ar")}
-                    className={`p-3 rounded-xl border-2 font-main transition-all text-xl ${settings.language === "ar" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
+                    className={`py-2 px-3 rounded-lg border-2 font-main transition-all text-sm ${settings.language === "ar" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
                   >
                     العربية
                   </button>
@@ -210,19 +210,19 @@ export default function SettingsPanel({
 
               {/* Clock Mode */}
               <div className="space-y-3">
-                <label className="text-xs text-heritage-amber uppercase font-bold tracking-widest px-1">
+                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
                   {t.clockMode}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleChange("clockMode", "analog")}
-                    className={`p-3 rounded-xl border-2 transition-all font-bold ${settings.clockMode === "analog" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
+                    className={`py-2 px-3 rounded-lg border-2 transition-all font-bold text-sm ${settings.clockMode === "analog" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
                   >
                     {t.analog}
                   </button>
                   <button
                     onClick={() => handleChange("clockMode", "digital")}
-                    className={`p-3 rounded-xl border-2 transition-all font-bold ${settings.clockMode === "digital" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
+                    className={`py-2 px-3 rounded-lg border-2 transition-all font-bold text-sm ${settings.clockMode === "digital" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
                   >
                     {t.digital}
                   </button>
@@ -244,27 +244,56 @@ export default function SettingsPanel({
                 onChange={(val) => handleChange("dstOffset", val)}
               />
 
-              {/* Prayer Settings */}
-              <div className="space-y-4">
-                <label className="text-xs text-heritage-amber uppercase font-bold tracking-widest px-1">
+              {/* Prayer Settings Accordion */}
+              <div className="space-y-3">
+                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
                   {t.prayerTimeAdjustments}
                 </label>
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.keys(settings.prayerOffsets).map((p) => (
-                    <div key={p} className="flex flex-col gap-1.5">
-                      <label className="text-[10px] text-heritage-amber/80 uppercase font-bold tracking-widest px-1">
-                        {t.prayers[p]}
-                      </label>
-                      <input
-                        type="number"
-                        min="-60"
-                        max="60"
-                        value={settings.prayerOffsets[p]}
-                        onChange={(e) => handleOffsetChange(p, e.target.value)}
-                        className="heritage-input !py-2 !px-3 text-center font-bold"
-                      />
-                    </div>
-                  ))}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsOffsetsExpanded(!isOffsetsExpanded)}
+                    className="heritage-input w-full flex items-center justify-between group active:scale-[0.98] transition-all"
+                  >
+                    <span className="truncate pr-4 text-white font-medium">
+                      {isOffsetsExpanded ? t.hide : t.show}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-heritage-amber transition-transform duration-500 ${isOffsetsExpanded ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {isOffsetsExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pt-4 grid grid-cols-2 gap-3">
+                          {Object.keys(settings.prayerOffsets).map((p) => (
+                            <div key={p} className="flex flex-col gap-1.5">
+                              <label className="text-[10px] text-heritage-amber/60 uppercase font-bold tracking-widest px-1">
+                                {t.prayers[p]}
+                              </label>
+                              <input
+                                type="number"
+                                min="-60"
+                                max="60"
+                                value={settings.prayerOffsets[p]}
+                                onChange={(e) =>
+                                  handleOffsetChange(p, e.target.value)
+                                }
+                                className="heritage-input !py-2.5 !px-3 text-center font-bold text-sm bg-white/5 border-white/10 focus:border-heritage-amber/50"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -280,13 +309,13 @@ export default function SettingsPanel({
             <div className="p-6 border-t border-white/10 flex flex-row gap-3 relative z-10">
               <button
                 onClick={onRefresh}
-                className="flex-1 py-3 px-4 rounded-xl font-bold bg-heritage-amber text-heritage-indigo hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-heritage-amber/20 text-sm uppercase tracking-wider"
+                className="flex-1 py-3 px-4 rounded-lg font-bold bg-heritage-amber text-heritage-indigo hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-heritage-amber/20 text-sm uppercase tracking-wider"
               >
                 {t.refresh}
               </button>
               <button
                 onClick={onReset}
-                className="flex-1 py-3 px-4 rounded-xl font-bold bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all text-sm uppercase tracking-wider"
+                className="flex-1 py-3 px-4 rounded-lg font-bold bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all text-sm uppercase tracking-wider"
               >
                 {t.reset}
               </button>

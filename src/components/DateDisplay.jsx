@@ -1,5 +1,6 @@
 import { Sun, Moon } from "lucide-react";
 import { localizeNumbers } from "../utils/numberUtils";
+import { useClock } from "../context/ClockContext";
 
 const InfoCard = ({ icon: Icon, text, textClass = "" }) => (
   <div className="heritage-card p-5 flex items-center gap-4">
@@ -13,7 +14,10 @@ const InfoCard = ({ icon: Icon, text, textClass = "" }) => (
   </div>
 );
 
-export default function DateDisplay({ hijriDate, currentTime, language }) {
+export default function DateDisplay() {
+  const { hijriDate, currentTime, settings } = useClock();
+  const language = settings.language;
+
   const formatHijri = () => {
     if (!hijriDate) return "...";
     const m = hijriDate.month;

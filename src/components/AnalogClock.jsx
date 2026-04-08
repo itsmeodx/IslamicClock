@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { PRAYER_POSITIONS, getCurrentPrayerProgress } from "../utils/timeMath";
 import { translations } from "../utils/translations";
+import { useClock } from "../context/ClockContext";
 
-export default function AnalogClock({ prayerTimes, language = "ar" }) {
+export default function AnalogClock() {
+  const { prayerTimes, settings } = useClock();
+  const language = settings.language;
   const [progress, setProgress] = useState(null);
 
   useEffect(() => {

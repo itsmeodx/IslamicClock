@@ -1,4 +1,12 @@
-export default function NextPrayerCard({ t, progress }) {
+import { translations } from "../utils/translations";
+import { getCurrentPrayerProgress } from "../utils/timeMath";
+import { useClock } from "../context/ClockContext";
+
+export default function NextPrayerCard() {
+  const { prayerTimes, settings } = useClock();
+  const t = translations[settings.language];
+  const progress = getCurrentPrayerProgress(prayerTimes);
+
   return (
     <div className="heritage-card flex-1 flex flex-col items-center justify-center text-center border-heritage-amber/40 overflow-hidden min-h-[250px]">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-heritage-amber/10 blur-[100px] pointer-events-none" />
