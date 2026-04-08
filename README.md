@@ -1,85 +1,38 @@
-# Islamic Prayer Clock
+# Modern Islamic Prayer Clock
 
-A modern, responsive Islamic prayer clock application that displays both digital and analog views with prayer times, Hijri date, and customizable settings.
+A continuous, cyclical analog prayer clock built with React, Vite, and Tailwind CSS.
 
-## Project Structure
+This project was completely refactored from a vanilla HTML/JS setup to a modern, maintainable component-driven architecture, designed specifically to be hosted on GitHub Pages.
 
-```
-IslamicClock/
-├── index.html              # Main HTML file with clean structure
-├── css/
-│   └── styles.css          # Complete CSS styling for the application
-├── js/
-│   └── main.js             # Complete JavaScript application logic
-├── simple-clock.html       # Original monolithic file (for reference)
-└── README.md               # This file
-```
+## Core Features
 
-## Features
+1. **Continuous Cyclical Dial**: Unlike standard 12-hour clocks, this application maps time onto a 24-hour sun/moon orbital track. The locations of Fajr, Sunrise, Dhuhr, Asr, Maghrib, Isha, and Midnight are dynamically plotted based on exact mathematical calculation using the Aladhan API.
+2. **Glassmorphism Aesthetic**: Beautiful, premium frosted-glass UI floating over a dynamic background.
+3. **PWA Support**: Installable on Android and iOS devices.
+4. **No Dependencies on Axios**: Uses pure native `fetch` for all API calls to keep bundle sizes minimal.
+5. **Caching System**: Caches Aladhan API responses in `localStorage` for 24 hours to reduce network requests.
 
-- **Dual Display Modes**: Switch between digital and analog clock views
-- **Prayer Times**: Accurate prayer times based on your location
-- **Hijri Calendar**: Display current Hijri date
-- **Multilingual**: Full support for English and Arabic
-- **Customizable Settings**:
-  - Calculation methods for prayer times
-  - Daylight saving time adjustment
-  - Per-prayer time offsets
-  - Progress display toggle
-- **Responsive Design**: Works on desktop and mobile devices
-- **Offline Support**: Caches data for offline use
+## Component Architecture
 
-## Architecture
+- `src/components/AnalogClock.jsx`: Renders the orbital path and the 9 key astronomical markers.
+- `src/hooks/usePrayerTimes.js`: Handles caching, geographical location, and fetching exact timings from `api.aladhan.com`.
+- `src/utils/translations.js`: Comprehensive English & Arabic localization.
 
-### Clean Separation of Concerns
-The application has been refactored from a single monolithic file into a clean, maintainable structure:
+## Deployment to GitHub Pages
 
-- **HTML (`index.html`)**: Clean semantic markup with external resource references
-- **CSS (`css/styles.css`)**: Complete styling including Islamic themes, responsive design, and settings UI
-- **JavaScript (`js/main.js`)**: Full application logic in a single `IslamicPrayerClock` class
+This repository is configured to deploy automatically to GitHub Pages using GitHub Actions (`.github/workflows/deploy.yml`).
 
-### Key Components in main.js
-1. **Configuration Management**: API endpoints, timeouts, and default settings
-2. **State Management**: Clock type, language, prayer times, and user preferences
-3. **DOM Management**: Cached element references and event handling
-4. **Prayer Time Calculations**: API integration with caching and offline support
-5. **Hijri Calendar**: Islamic date conversion and display
-6. **Multi-language Support**: Complete English/Arabic translation system
-7. **Canvas Rendering**: Beautiful analog clock with Islamic geometric patterns
-8. **Settings Management**: Persistent user preferences and real-time updates
+1. The Vite configuration is set with `base: '/IslamicClock/'`.
+2. Ensure that in your GitHub Repository settings, **Pages -> Build and deployment -> Source** is set to **GitHub Actions**.
 
-### Key Benefits
-1. **Maintainability**: Clear separation between presentation, styling, and logic
-2. **Performance**: Optimized canvas rendering with caching and smart redraws
-3. **Reliability**: Robust error handling and offline fallback mechanisms
-4. **Accessibility**: Multi-language support with proper RTL text handling
+## Scripts
 
-## Usage
+- `npm run dev` - Starts local development server.
+- `npm run build` - Builds for production.
 
-Simply open `index.html` in a web browser. The application will:
+## Best Practices Implemented
 
-1. Request location permission for accurate prayer times
-2. Fetch prayer times from the Aladhan API
-3. Display the clock in your preferred language and format
-4. Cache data for offline use
-
-### File Structure
-- **`index.html`**: Main entry point with clean HTML structure
-- **`css/styles.css`**: All styling including Islamic themes and responsive design
-- **`js/main.js`**: Complete application logic with IslamicPrayerClock class
-- **`simple-clock.html`**: Original single-file version (kept for reference)
-
-## Configuration
-
-Prayer time calculation methods and other settings can be customized through the settings panel (gear icon in the top-left corner).
-
-## Browser Support
-
-- Modern browsers with ES6+ support
-- Canvas API support required for analog clock
-- Geolocation API optional (falls back to Mecca coordinates)
-
-## API Dependencies
-
-- [Aladhan API](https://aladhan.com/prayer-times-api) for prayer times and Hijri dates
-- [BigDataCloud API](https://bigdatacloud.net) for reverse geocoding (location names)
+- Strict ES Modules usage.
+- Native APIs over bloated 3rd party packages.
+- Caching to prevent hitting HTTP rate limits.
+- Precise SVG drawing mathematics vs computationally heavy 2D Canvas redraws.
