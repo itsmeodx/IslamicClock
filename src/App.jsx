@@ -20,6 +20,7 @@ export default function App() {
     error,
     permissionStatus,
     requestLocation,
+    setManualLocation,
     refresh,
     currentTime,
   } = useClock();
@@ -29,8 +30,9 @@ export default function App() {
   const t = translations[settings.language];
   const progress = getCurrentPrayerProgress(prayerTimes);
 
-  if (permissionStatus === "prompt") {
-    return <LocationRequest t={t} onAllow={requestLocation} />;
+  // If no location set (saved or current), or stuck in prompt, show request screen
+  if (permissionStatus === "prompt" || (permissionStatus === "denied" && !locationName)) {
+    return <LocationRequest t={t} onAllow={requestLocation} onManualSearch={setManualLocation} />;
   }
 
   return (

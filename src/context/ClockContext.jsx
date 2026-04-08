@@ -38,9 +38,12 @@ export function ClockProvider({ children }) {
     prayerTimes,
     hijriDate,
     locationName,
+    coords,
     error,
     permissionStatus,
     requestLocation,
+    resetLocation,
+    setManualLocation,
     refresh,
     loading,
   } = usePrayerTimes(settings);
@@ -59,21 +62,8 @@ export function ClockProvider({ children }) {
   }, []);
 
   const resetSettings = useCallback(() => {
-    setSettings({
-      language: "ar",
-      calculationMethod: 21,
-      dstOffset: 0,
-      hijriOffset: 0,
-      prayerOffsets: {
-        Fajr: 0,
-        Sunrise: 0,
-        Dhuhr: 0,
-        Asr: 0,
-        Maghrib: 0,
-        Isha: 0,
-      },
-      clockMode: "analog",
-    });
+    localStorage.clear();
+    window.location.reload();
   }, []);
 
   const value = {
@@ -83,9 +73,12 @@ export function ClockProvider({ children }) {
     prayerTimes,
     hijriDate,
     locationName,
+    coords,
     error,
     permissionStatus,
     requestLocation,
+    resetLocation,
+    setManualLocation,
     refresh,
     loading,
     setSettings, // For backward compatibility

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, ChevronDown, Check } from "lucide-react";
+import { Settings, ChevronDown, Check, MapPin } from "lucide-react";
 import { translations } from "../utils/translations";
 import { useClock } from "../context/ClockContext";
+import ConfirmationModal from "./ConfirmationModal";
 
 function CustomSelect({ label, value, options, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -102,13 +103,32 @@ function CustomSelect({ label, value, options, onChange }) {
 }
 
 export default function SettingsPanel({ isOpen, onClose }) {
-  const { settings, setSettings, refresh, resetSettings } = useClock();
+  const {
+    settings,
+    setSettings,
+    refresh,
+    resetSettings,
+    locationName,
+    coords,
+    resetLocation,
+  } = useClock();
   const onUpdate = setSettings;
   const onRefresh = refresh;
   const onReset = resetSettings;
 
   const t = translations[settings.language];
   const [isOffsetsExpanded, setIsOffsetsExpanded] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // { type: 'resetAll' | 'resetLocation' }
+
+  const handleConfirm = () => {
+    if (confirmAction.type === "resetAll") {
+      onReset(); // calls resetSettings
+    } else {
+      resetLocation();
+      onClose();
+    }
+    setConfirmAction(null);
+  };
 
   const handleChange = (key, value) => {
     onUpdate({ ...settings, [key]: value });
@@ -187,6 +207,34 @@ export default function SettingsPanel({ isOpen, onClose }) {
 
             {/* 2. SCROLLABLE BODY */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8 relative z-10 custom-scrollbar">
+              {/* Location Management */}
+              <div className="space-y-3">
+                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
+                  {t.locationName}
+                </label>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-heritage-amber" />
+                    <div>
+                      <p className="text-sm font-bold text-white leading-tight">
+                        {locationName || "..."}
+                      </p>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest mt-0.5">
+                        {coords.lat && coords.lng
+                          ? `${coords.lat.toFixed(2)}, ${coords.lng.toFixed(2)}`
+                          : t.manualSearch}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setConfirmAction({ type: "resetLocation" })}
+                    className="w-full py-2.5 px-4 rounded-lg bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-white/80 hover:text-red-400 transition-all text-xs font-bold uppercase tracking-widest"
+                  >
+                    {t.resetLocation}
+                  </button>
+                </div>
+              </div>
+
               {/* Language */}
               <div className="space-y-3">
                 <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
@@ -314,12 +362,28 @@ export default function SettingsPanel({ isOpen, onClose }) {
                 {t.refresh}
               </button>
               <button
-                onClick={onReset}
+                onClick={() => setConfirmAction({ type: "resetAll" })}
                 className="flex-1 py-3 px-4 rounded-lg font-bold bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all text-sm uppercase tracking-wider"
               >
                 {t.reset}
               </button>
             </div>
+
+            {/* Confirmation Overlay */}
+            <ConfirmationModal
+              isOpen={!!confirmAction}
+              onClose={() => setConfirmAction(null)}
+              onConfirm={handleConfirm}
+              isArabic={settings.language === "ar"}
+              title={confirmAction?.type === "resetAll" ? t.reset : t.resetLocation}
+              message={
+                confirmAction?.type === "resetAll"
+                  ? t.confirmReset
+                  : t.confirmResetLocation
+              }
+              confirmText={confirmAction?.type === "resetAll" ? t.reset : t.resetLocation}
+              cancelText={t.hide}
+            />
           </motion.div>
         </>
       )}
