@@ -158,29 +158,35 @@ export function usePrayerTimes(settings) {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const newCoords = { lat: latitude, lng: longitude };
-        setCoords(newCoords);
-        setPermissionStatus("granted");
-        const name = await getLocationName(latitude, longitude);
-        setLocationName(name);
+    try {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const newCoords = { lat: latitude, lng: longitude };
+          setCoords(newCoords);
+          setPermissionStatus("granted");
+          const name = await getLocationName(latitude, longitude);
+          setLocationName(name);
 
-        localStorage.setItem(
-          "last-known-location",
-          JSON.stringify({
-            lat: latitude,
-            lng: longitude,
-            name: name,
-          }),
-        );
-      },
-      (err) => {
-        setPermissionStatus("denied");
-      },
-      { timeout: 10000, enableHighAccuracy: true },
-    );
+          localStorage.setItem(
+            "last-known-location",
+            JSON.stringify({
+              lat: latitude,
+              lng: longitude,
+              name: name,
+            }),
+          );
+        },
+        (err) => {
+          console.error("Geolocation error callback:", err);
+          setPermissionStatus("denied");
+        },
+        { timeout: 10000, enableHighAccuracy: true },
+      );
+    } catch (err) {
+      console.error("Geolocation synchronous error:", err);
+      setPermissionStatus("denied");
+    }
   }, []);
 
   return {
