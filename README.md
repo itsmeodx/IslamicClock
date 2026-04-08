@@ -27,8 +27,10 @@ This repository is configured to deploy automatically to GitHub Pages using GitH
 
 ## Scripts
 
-- `npm run dev` - Starts local development server.
-- `npm run build` - Builds for production.
+- `pnpm dev` - Starts local development server.
+- `pnpm build` - Builds for production.
+- `pnpm lint` - Runs ESLint.
+- `pnpm typecheck` - Runs TypeScript type checking.
 
 ## Best Practices Implemented
 
