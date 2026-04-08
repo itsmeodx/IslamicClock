@@ -1,6 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@400;700&family=Tenor+Sans&display=swap");
 @import "tailwindcss";
-
-@import url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700;900&display=swap");
 
 @theme {
   --color-heritage-indigo: #0a1128;
@@ -10,14 +9,14 @@
   --color-heritage-bg: #0b1120;
   --color-heritage-glass: rgba(10, 25, 47, 0.4);
 
-  --font-arabic: "Amiri", serif;
-  --font-serif: "Playfair Display", serif;
+  --font-arabic: "Alexandria", sans-serif;
+  --font-main: "Tenor Sans", "Alexandria", sans-serif;
 }
 
 :root {
   background-color: var(--color-heritage-bg);
   color: #ffffff;
-  font-family: var(--font-serif);
+  font-family: var(--font-main);
 }
 
 body {
@@ -59,20 +58,21 @@ body::before {
   @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/90 focus:border-heritage-gold/50 focus:bg-white/10 focus:ring-1 focus:ring-heritage-gold/30 focus:outline-none transition-all duration-300 backdrop-blur-md;
 }
 
+/* Hide number input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
 
-  /* Hide number input spinners */
-  input::-webkit-outer-spin-button,
-  input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    appearance: none;
-    margin: 0;
-  }
-  input[type=number] {
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-
-
+.heritage-gradient-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-heritage-gold/50;
+}
 
 /* Islamic Geometric Pattern */
 .geometric-bg {
@@ -98,4 +98,3 @@ body::before {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #ffd700; /* heritage-gold */
 }
-

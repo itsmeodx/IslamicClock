@@ -5,7 +5,11 @@ const InfoCard = ({ icon: Icon, text, textClass = "" }) => (
   <div className="heritage-card p-5 flex items-center gap-4">
     <div className="geometric-bg opacity-10" />
     <Icon className="w-6 h-6 text-heritage-amber shrink-0 drop-shadow-sm" />
-    <p className={`${textClass} text-white drop-shadow-sm`}>{text}</p>
+    <p
+      className={`${textClass} heritage-gradient-text drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] leading-relaxed pb-1`}
+    >
+      {text}
+    </p>
   </div>
 );
 
