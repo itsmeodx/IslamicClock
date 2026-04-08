@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { usePrayerTimes } from "./hooks/usePrayerTimes";
+import { useState } from "react";
+import { useClock } from "./context/ClockContext";
 import SettingsPanel from "./components/SettingsPanel";
 import LocationRequest from "./components/LocationRequest";
 import AnalogClock from "./components/AnalogClock";
@@ -11,31 +11,9 @@ import { getCurrentPrayerProgress } from "./utils/timeMath";
 import { MapPin, Settings } from "lucide-react";
 
 export default function App() {
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem("heritage-settings");
-    return saved
-      ? JSON.parse(saved)
-      : {
-          language: "ar",
-          calculationMethod: 21,
-          dstOffset: 0,
-          hijriOffset: 0,
-          prayerOffsets: {
-            Fajr: 0,
-            Sunrise: 0,
-            Dhuhr: 0,
-            Asr: 0,
-            Maghrib: 0,
-            Isha: 0,
-          },
-          clockMode: "analog",
-        };
-  });
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-
   const {
+    settings,
+    setSettings,
     prayerTimes,
     hijriDate,
     locationName,
@@ -43,16 +21,10 @@ export default function App() {
     permissionStatus,
     requestLocation,
     refresh,
-  } = usePrayerTimes(settings);
+    currentTime,
+  } = useClock();
 
-  useEffect(() => {
-    localStorage.setItem("heritage-settings", JSON.stringify(settings));
-  }, [settings]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const t = translations[settings.language];
   const progress = getCurrentPrayerProgress(prayerTimes);
@@ -91,26 +63,15 @@ export default function App() {
         {settings.clockMode === "analog" ? (
           <div className="flex-1 heritage-card flex flex-col items-center justify-center min-h-[400px]">
             <div className="geometric-bg opacity-10" />
-            <AnalogClock
-              prayerTimes={prayerTimes}
-              language={settings.language}
-            />
+            <AnalogClock />
           </div>
         ) : (
-          <DigitalClock
-            prayerTimes={prayerTimes}
-            currentTime={currentTime}
-            t={t}
-          />
+          <DigitalClock />
         )}
 
         <div className="w-full lg:w-[350px] flex flex-col gap-6">
-          <NextPrayerCard t={t} progress={progress} />
-          <DateDisplay
-            hijriDate={hijriDate}
-            currentTime={currentTime}
-            language={settings.language}
-          />
+          <NextPrayerCard />
+          <DateDisplay />
         </div>
       </main>
 
@@ -118,26 +79,6 @@ export default function App() {
       <SettingsPanel
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdate={setSettings}
-        onRefresh={refresh}
-        onReset={() =>
-          setSettings({
-            language: "ar",
-            calculationMethod: 21,
-            dstOffset: 0,
-            hijriOffset: 0,
-            prayerOffsets: {
-              Fajr: 0,
-              Sunrise: 0,
-              Dhuhr: 0,
-              Asr: 0,
-              Maghrib: 0,
-              Isha: 0,
-            },
-            clockMode: "analog",
-          })
-        }
       />
 
       {error && (
