@@ -16,8 +16,8 @@ This project was completely refactored from a vanilla HTML/JS setup to a modern,
 [<img src="https://lh4.ggpht.com/x-plP9YZXhCaiDkTKQ5S29PwLmdi4feEKrMOtQle4NuoOaUgKUMH9pPWIg91da3anhSmw-G8erEIuU0d" width="128" alt="Google Chrome" title="Download for Google Chrome">](https://github.com/itsmeodx/IslamicClock/releases/download/latest/chrome.zip)
 [<img src="https://www.mozilla.org/media/img/structured-data/logo-firefox-browser.fbc7ffbb50fd.png" width="128" alt="Mozilla Firefox" title="Download for Mozilla Firefox">](https://github.com/itsmeodx/IslamicClock/releases/download/latest/firefox.xpi)
 
-- **Chrome/Edge/Brave**: [Download the ZIP](https://github.com/itsmeodx/IslamicClock/releases), unzip, and load "unpacked" in `chrome://extensions`.
-- **Firefox**: [Download the XPI](https://github.com/itsmeodx/IslamicClock/releases), for fast installation just click on firefox icon above, or download the XPI and drag and drop it in firefox.
+- **Chrome/Edge/Brave**: Click the icon above to **Download the ZIP**, then extract it and select **"Load unpacked"** in `chrome://extensions`.
+- **Firefox**: Click the icon above for **Instant Installation**, or go to [releases](https://github.com/itsmeodx/IslamicClock/releases), download the XPI file and drag it into any open Firefox window.
 
 ## Component Architecture
 
