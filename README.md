@@ -3,10 +3,6 @@
 
 **A high-precision analog prayer dial for Chrome and Firefox.**
 
-[![GitHub Release](https://img.shields.io/github/v/release/itsmeodx/IslamicClock?label=Latest&color=blue)](https://github.com/itsmeodx/IslamicClock/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/itsmeodx/IslamicClock/main.yml?branch=main)](https://github.com/itsmeodx/IslamicClock/actions)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-
 [Web App](https://itsmeodx.github.io/IslamicClock/) • [Browser Extensions](#installation) • [Releases](https://github.com/itsmeodx/IslamicClock/releases)
 
 </div>
