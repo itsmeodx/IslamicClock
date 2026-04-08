@@ -201,7 +201,7 @@ export default function SettingsPanel({
                   </button>
                   <button
                     onClick={() => handleChange("language", "ar")}
-                    className={`p-3 rounded-xl border-2 font-arabic transition-all text-xl ${settings.language === "ar" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
+                    className={`p-3 rounded-xl border-2 font-main transition-all text-xl ${settings.language === "ar" ? "bg-heritage-amber/20 border-heritage-amber text-white shadow-[0_0_15px_rgba(255,159,28,0.2)]" : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10"}`}
                   >
                     العربية
                   </button>

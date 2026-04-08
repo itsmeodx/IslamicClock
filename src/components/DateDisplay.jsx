@@ -33,12 +33,12 @@ export default function DateDisplay({ hijriDate, currentTime, language }) {
       <InfoCard
         icon={Moon}
         text={formatHijri()}
-        textClass="text-xl font-arabic font-bold tracking-wide"
+        textClass="text-xl font-main font-bold tracking-wide"
       />
       <InfoCard
         icon={Sun}
         text={gregorianDate}
-        textClass="text-lg font-bold uppercase tracking-widest"
+        textClass="text-lg font-main font-bold uppercase tracking-widest"
       />
     </div>
   );

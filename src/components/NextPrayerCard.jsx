@@ -5,7 +5,7 @@ export default function NextPrayerCard({ t, progress }) {
       <div className="geometric-bg opacity-10" />
 
       <div className="relative z-10 flex flex-col items-center">
-        <h3 className="text-4xl font-arabic font-bold heritage-gradient-text mb-2 leading-relaxed drop-shadow-[0_8px_15px_rgba(0,0,0,0.5)]">
+        <h3 className="text-4xl font-main font-bold heritage-gradient-text mb-2 leading-relaxed drop-shadow-[0_8px_15px_rgba(0,0,0,0.5)]">
           {t.prayers[progress?.nextPrayer] || "..."}
         </h3>
 
