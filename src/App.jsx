@@ -63,7 +63,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen p-4 sm:p-8 flex flex-col items-center gap-8 font-serif"
+      className="min-h-screen p-4 sm:p-8 flex flex-col items-center gap-8 font-main"
       dir={settings.language === "ar" ? "rtl" : "ltr"}
     >
       <div className="geometric-bg opacity-5" />
@@ -71,7 +71,7 @@ export default function App() {
       {/* HEADER */}
       <div className="w-full max-w-5xl flex justify-between items-center z-10">
         <div>
-          <h1 className="text-xl font-bold leading-tight">{t.title}</h1>
+          <h1 className="text-xl font-bold leading-tight mb-0.5">{t.title}</h1>
           <p className="text-xs text-heritage-gold flex items-center gap-1 uppercase tracking-widest font-bold">
             <MapPin className="w-3 h-3" /> {locationName || "..."}
           </p>
