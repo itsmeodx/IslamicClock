@@ -40,6 +40,35 @@ export default function AnalogClock({ prayerTimes, language = "ar" }) {
             <stop offset="100%" stopColor="#FF4500" />
           </linearGradient>
 
+          {/* Heritage Text Gradient (White to Gold) */}
+          <linearGradient
+            id="heritageTextGradient"
+            x1="0%"
+            y1="0%"
+            x2="0%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="60%" stopColor="#FFFFFF" />
+            <stop offset="100%" stopColor="#FFD700" />
+          </linearGradient>
+
+          {/* Node Gradients (Saturated Amber Gems) */}
+          <radialGradient id="majorNodeGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FFD700" />
+            <stop offset="100%" stopColor="#E65100" />
+          </radialGradient>
+          <radialGradient id="minorNodeGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#FF9F1C" />
+            <stop offset="100%" stopColor="#E65100" stopOpacity="0.5" />
+          </radialGradient>
+
+          {/* Smoked Glass Pivot Gradient */}
+          <radialGradient id="glassPivotGradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(10,17,40,0.6)" />
+            <stop offset="100%" stopColor="rgba(255,159,28,0.2)" />
+          </radialGradient>
+
           {/* Hand Glow */}
           <filter id="handGlow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="blur" />
@@ -47,15 +76,15 @@ export default function AnalogClock({ prayerTimes, language = "ar" }) {
           </filter>
         </defs>
 
-        {/* DIAL BACKGROUND (Parchment Circle) */}
+        {/* DIAL BACKGROUND (Smoked Glass) */}
         <circle
           cx={CENTER}
           cy={CENTER}
           r={TRACK_RADIUS + 10}
-          fill="rgba(255,255,255,0.05)"
-          stroke="#FF9F1C"
-          strokeWidth="0.5"
-          className="opacity-30"
+          fill="rgba(0,0,0,0.2)"
+          stroke="url(#heritageAmber)"
+          strokeWidth="1"
+          strokeOpacity="0.4"
         />
 
         {/* MAIN TRACK (Glowing Amber) */}
@@ -77,30 +106,37 @@ export default function AnalogClock({ prayerTimes, language = "ar" }) {
 
           const isNext = progress?.nextPrayer === node.name;
           const isMinor = node.isMinor;
-          const radius = isMinor ? 4 : 8;
+          const radius = isMinor ? 4.5 : 7;
 
           return (
             <g key={node.name}>
               {isNext ? (
-                // Active Pulse Beacon
-                <g>
-                  <circle
-                    cx={nodeX}
-                    cy={nodeY}
-                    r={radius}
-                    fill="#0A1128"
-                    stroke="#FF9F1C"
-                    strokeWidth="2"
-                  />
-                </g>
+                <circle
+                  cx={nodeX}
+                  cy={nodeY}
+                  r={radius + 2}
+                  fill="url(#majorNodeGradient)"
+                  stroke="#FFD700"
+                  strokeWidth="2"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(255,159,28,0.8))",
+                  }}
+                />
               ) : (
                 <circle
                   cx={nodeX}
                   cy={nodeY}
                   r={radius}
-                  fill="#ffffff"
+                  fill={
+                    isNext
+                      ? "url(#majorNodeGradient)"
+                      : isMinor
+                        ? "#FFB300"
+                        : "url(#majorNodeGradient)"
+                  }
                   stroke="#FF9F1C"
-                  strokeWidth="2"
+                  strokeWidth={isMinor ? "1" : "3"}
+                  strokeOpacity="1"
                 />
               )}
             </g>
@@ -136,51 +172,85 @@ export default function AnalogClock({ prayerTimes, language = "ar" }) {
           <circle
             cx={CENTER}
             cy={CENTER}
-            r="12"
-            fill="#0A1128"
-            stroke="#FF9F1C"
-            strokeWidth="2"
+            r="14"
+            fill="url(#glassPivotGradient)"
+            stroke="#FFD700"
+            strokeWidth="1.5"
+            strokeOpacity="0.8"
+          />
+          <circle
+            cx={CENTER}
+            cy={CENTER}
+            r="4"
+            fill="#FF9F1C"
+            style={{ filter: "drop-shadow(0 0 5px #FF9F1C)" }}
           />
         </g>
-      </svg>
 
-      {/* TYPOGRAPHY LAYER */}
-      <div className="absolute inset-0 pointer-events-none z-20">
+        {/* LABELS LAYER */}
         {PRAYER_POSITIONS.map((node) => {
           const angleRad = (node.degree - 90) * (Math.PI / 180);
-          // 32% (160/500 * 100) is the exact radius of the nodes.
-          // Place labels outside the node. Sunrise/Maghrib get extra clearance
-          const extraClearance =
-            node.name === "Sunrise" || node.name === "Maghrib" ? 44 : 42;
-          const textOffset = node.isMinor ? 42 : extraClearance;
-          const labelX = 50 + textOffset * Math.cos(angleRad);
-          const labelY = 50 + textOffset * Math.sin(angleRad);
+          const textRadius = TRACK_RADIUS + (node.isMinor ? 45 : 55);
+          const labelX = CENTER + textRadius * Math.cos(angleRad);
+          const labelY = CENTER + textRadius * Math.sin(angleRad);
 
           return (
-            <div
-              key={node.name}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 text-center transition-all duration-500"
-              style={{ left: `${labelX}%`, top: `${labelY}%` }}
-            >
-              <div className="flex flex-col items-center gap-1">
-                {/* PRAYER NAME */}
-                <span
-                  className={`block ${language === "ar" ? "font-arabic" : "font-sans"} font-bold ${node.isMinor ? "text-white/40" : "text-lg sm:text-xl text-white drop-shadow-md"} whitespace-nowrap leading-tight`}
-                >
-                  {translations[language].prayers[node.name]}
-                </span>
+            <g key={node.name}>
+              {/* PRAYER NAME */}
+              <text
+                x={labelX}
+                y={labelY - 10 + (language === "ar" ? 4 : 0)}
+                fill={
+                  node.isMinor
+                    ? "rgba(255,255,255,0.6)"
+                    : "url(#heritageTextGradient)"
+                }
+                fontSize={node.isMinor ? "12" : "18"}
+                fontWeight={language === "ar" ? "600" : "700"}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{
+                  filter: node.isMinor
+                    ? "none"
+                    : "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
+                }}
+              >
+                {translations[language].prayers[node.name]}
+              </text>
 
-                {/* PRAYER TIME */}
-                {!node.isMinor && prayerTimes?.[node.name] && (
-                  <span className="block text-[12px] font-bold text-heritage-gold tabular-nums bg-white/10 backdrop-blur-md shadow-sm px-2 rounded-md border border-white/20 mt-1">
+              {/* PRAYER TIME (If available) */}
+              {prayerTimes?.[node.name] && (
+                <g transform={`translate(${labelX}, ${labelY + 16})`}>
+                  <rect
+                    x="-25"
+                    y="-10"
+                    width="50"
+                    height="20"
+                    rx="6"
+                    fill={
+                      node.isMinor
+                        ? "rgba(255,255,255,0.06)"
+                        : "rgba(255,255,255,0.08)"
+                    }
+                    stroke="none"
+                  />
+                  <text
+                    fill={node.isMinor ? "rgba(255,255,255,0.7)" : "#FFD700"}
+                    fontSize="11"
+                    fontWeight="400"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="tabular-nums"
+                    style={{ opacity: 0.9 }}
+                  >
                     {prayerTimes[node.name]}
-                  </span>
-                )}
-              </div>
-            </div>
+                  </text>
+                </g>
+              )}
+            </g>
           );
         })}
-      </div>
+      </svg>
     </div>
   );
 }
