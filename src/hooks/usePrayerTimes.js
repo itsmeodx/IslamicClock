@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // UTILS
 const fetchPrayerCalendar = async ({
@@ -45,7 +45,7 @@ export const fetchCitySuggestions = async (query) => {
         .filter(Boolean)
         .join(", "),
     }));
-  } catch (e) {
+  } catch {
     return [];
   }
 };
@@ -57,7 +57,7 @@ const getLocationName = async (lat, lng) => {
     );
     const data = await res.json();
     return `${data.locality || data.city || "Unknown"}, ${data.countryName || "Unknown"}`;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -85,7 +85,9 @@ export function usePrayerTimes(settings) {
         if (parsed.name || (parsed.lat !== null && parsed.lng !== null))
           return parsed;
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
     return { lat: null, lng: null, name: null };
   });
 
@@ -126,6 +128,8 @@ export function usePrayerTimes(settings) {
     (location.lat !== null && location.lng !== null)
   );
 
+  const queryClient = useQueryClient();
+
   const {
     data: monthData,
     isLoading,
@@ -153,6 +157,45 @@ export function usePrayerTimes(settings) {
     enabled: hasLocation,
     staleTime: 1000 * 60 * 60 * 24,
   });
+
+  // PREFETCH NEXT MONTH (After the 20th)
+  useEffect(() => {
+    if (monthData && date.getDate() > 20 && hasLocation) {
+      const nextDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+      const nextYear = nextDate.getFullYear();
+      const nextMonth = nextDate.getMonth() + 1;
+
+      queryClient.prefetchQuery({
+        queryKey: [
+          "prayerTimes",
+          nextYear,
+          nextMonth,
+          location.lat,
+          location.lng,
+          location.name,
+          calculationMethod,
+          tune,
+        ],
+        queryFn: () =>
+          fetchPrayerCalendar({
+            year: nextYear,
+            month: nextMonth,
+            location,
+            calculationMethod,
+            tune,
+          }),
+        staleTime: 1000 * 60 * 60 * 24, // 24 hours
+      });
+    }
+  }, [
+    date,
+    monthData,
+    hasLocation,
+    location,
+    calculationMethod,
+    tune,
+    queryClient,
+  ]);
 
   const { prayerTimes, hijriDate } = useMemo(() => {
     const day = date.getDate();
