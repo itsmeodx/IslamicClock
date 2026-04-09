@@ -3,14 +3,12 @@ export const PRAYER_POSITIONS = [
   { name: "Asr", degree: 60 },
   { name: "Maghrib", degree: 90 },
   { name: "Isha", degree: 120 },
-  { name: "Firstthird", degree: 150, isMinor: true },
-  { name: "Midnight", degree: 180, isMinor: true },
-  { name: "Lastthird", degree: 210, isMinor: true },
+  { name: "Firstthird", degree: 150, isMinor: true, isMarker: true },
+  { name: "Midnight", degree: 180, isMinor: true, isMarker: true },
+  { name: "Lastthird", degree: 210, isMinor: true, isMarker: true },
   { name: "Fajr", degree: 240 },
   { name: "Sunrise", degree: 270, isMinor: true },
 ];
-
-const MARKER_NAMES = new Set(["Firstthird", "Midnight", "Lastthird"]);
 
 export function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
@@ -20,11 +18,10 @@ export function timeToMinutes(timeStr) {
   return h * 60 + m;
 }
 
-export function getCurrentPrayerProgress(prayerTimes) {
+export function getCurrentPrayerProgress(prayerTimes, currentTime = new Date()) {
   if (!prayerTimes) return null;
 
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
   // Build progress nodes from PRAYER_POSITIONS so there's one source of truth.
   const nodesWithTimes = PRAYER_POSITIONS
@@ -33,10 +30,24 @@ export function getCurrentPrayerProgress(prayerTimes) {
       const min = timeToMinutes(prayerTimes[node.name]);
       return {
         ...node,
-        isMarker: MARKER_NAMES.has(node.name),
+        isMarker: Boolean(node.isMarker),
         min,
       };
     });
+
+  if (nodesWithTimes.length === 0) return null;
+
+  if (nodesWithTimes.length === 1) {
+    const singleNode = nodesWithTimes[0];
+    return {
+      degree: singleNode.degree,
+      nextPrayer: singleNode.name,
+      remainingTime: "--:--:--",
+      percentage: 0,
+      prevName: singleNode.name,
+      isGracePeriod: false,
+    };
+  }
 
   // Sort them by actual time in the day
   nodesWithTimes.sort((a, b) => a.min - b.min);
@@ -85,19 +96,18 @@ export function getCurrentPrayerProgress(prayerTimes) {
   let currentDegree = (prevDegree + diff * percentage) % 360;
 
   // Calculate absolute target date for the next prayer
-  const nowTime = new Date();
-  const targetDate = new Date(nowTime);
+  const targetDate = new Date(currentTime);
   const targetH = Math.floor(nextNode.min / 60);
   const targetM = nextNode.min % 60;
 
   targetDate.setHours(targetH, targetM, 0, 0);
 
   // If target is in the past compared to now (e.g. crossing midnight), it must be for tomorrow
-  if (targetDate < nowTime) {
+  if (targetDate < currentTime) {
     targetDate.setDate(targetDate.getDate() + 1);
   }
 
-  const totalDiffMs = Math.max(0, targetDate - nowTime);
+  const totalDiffMs = Math.max(0, targetDate - currentTime);
   const totalRemainingSeconds = Math.floor(totalDiffMs / 1000);
 
   const hoursRemaining = Math.floor(totalRemainingSeconds / 3600);
@@ -126,7 +136,7 @@ export function getCurrentPrayerProgress(prayerTimes) {
       .toString()
       .padStart(2, "0");
     const mElapsed = (passedMinutes % 60).toString().padStart(2, "0");
-    const sElapsed = nowTime.getSeconds().toString().padStart(2, "0");
+    const sElapsed = currentTime.getSeconds().toString().padStart(2, "0");
     countdownStr = `${hElapsed}:${mElapsed}:${sElapsed}`;
   }
 
