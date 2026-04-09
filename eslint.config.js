@@ -6,7 +6,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import eslintConfigPrettier from "eslint-config-prettier";
 
 export default defineConfig([
-  globalIgnores(["dist", "legacy_backup"]),
+  globalIgnores(["dist", "extension-dist", "legacy_backup"]),
   {
     files: ["**/*.{js,jsx}"],
     extends: [
