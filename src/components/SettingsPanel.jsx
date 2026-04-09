@@ -119,6 +119,19 @@ export default function SettingsPanel({ isOpen, onClose }) {
   const [isOffsetsExpanded, setIsOffsetsExpanded] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'resetAll' | 'resetLocation' }
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
+
   const handleConfirm = () => {
     if (confirmAction.type === "resetAll") {
       onReset(); // calls resetSettings
