@@ -1,14 +1,30 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { PRAYER_POSITIONS, getCurrentPrayerProgress } from "../utils/timeMath";
 import { translations } from "../utils/translations";
 import { useClock } from "../hooks/useClock";
 
+function normalizeAngle(angle) {
+  let next = angle % 360;
+  if (next < 0) next += 360;
+  return next;
+}
+
+function shortestAngleDelta(from, to) {
+  let delta = to - from;
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
+  return delta;
+}
+
 export default function AnalogClock() {
+  const [isMobile, setIsMobile] = useState(false);
   const { prayerTimes, settings } = useClock();
+  const initialDegree = getCurrentPrayerProgress(prayerTimes)?.degree ?? 0;
   const [progress, setProgress] = useState(() =>
     getCurrentPrayerProgress(prayerTimes),
   );
+  const [displayDegree, setDisplayDegree] = useState(initialDegree);
+  const displayDegreeRef = useRef(initialDegree);
   const language = settings.language;
 
   useEffect(() => {
@@ -19,17 +35,59 @@ export default function AnalogClock() {
     return () => clearInterval(timer);
   }, [prayerTimes]);
 
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkIfMobile();
+    window.addEventListener("resize", checkIfMobile);
+
+    return () => window.removeEventListener("resize", checkIfMobile);
+  }, []);
+
+  useEffect(() => {
+    if (!progress) return;
+
+    let rafId;
+    const target = normalizeAngle(progress.degree ?? 0);
+
+    const animate = () => {
+      const normalizedCurrent = normalizeAngle(displayDegreeRef.current);
+      const delta = shortestAngleDelta(normalizedCurrent, target);
+
+      if (Math.abs(delta) < 0.05) {
+        if (displayDegreeRef.current !== target) {
+          displayDegreeRef.current = target;
+          setDisplayDegree(target);
+        }
+        return;
+      }
+
+      const next = normalizeAngle(normalizedCurrent + delta * 0.1);
+      displayDegreeRef.current = next;
+      setDisplayDegree(next);
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [progress]);
+
   const SIZE = 500;
   const CENTER = SIZE / 2;
-  const TRACK_RADIUS = 160;
+  const TRACK_RADIUS = isMobile ? 160 : 175;
   const HAND_LENGTH = TRACK_RADIUS - 20;
+  const MAJOR_LABEL_OFFSET = isMobile ? 55 : 48;
+  const MINOR_LABEL_OFFSET = isMobile ? 45 : 38;
+  const TIME_LABEL_OFFSET = 16;
 
-  const handAngleRad = ((progress?.degree ?? 0) - 90) * (Math.PI / 180);
+  const handAngleRad = (displayDegree - 90) * (Math.PI / 180);
   const handX = CENTER + HAND_LENGTH * Math.cos(handAngleRad);
   const handY = CENTER + HAND_LENGTH * Math.sin(handAngleRad);
 
   return (
-    <div className="relative w-full h-full max-w-[500px] aspect-square flex items-center justify-center">
+    <div className="relative w-full h-full max-w-125 aspect-square flex items-center justify-center">
       {/* SVG LAYER */}
       <svg
         viewBox={`0 0 ${SIZE} ${SIZE}`}
@@ -154,7 +212,7 @@ export default function AnalogClock() {
 
         {/* THE NEEDLE (Legacy Logic Recreation) */}
         {progress && (
-          <motion.line
+          <line
             x1={CENTER}
             y1={CENTER}
             x2={handX}
@@ -162,11 +220,9 @@ export default function AnalogClock() {
             stroke="#FF9F1C"
             strokeWidth="4"
             strokeLinecap="round"
-            animate={{ x2: handX, y2: handY }}
             style={{
               filter: "drop-shadow(0 0 8px rgba(255,159,28,0.8))",
             }}
-            transition={{ type: "spring", stiffness: 20, damping: 10 }}
           />
         )}
 
@@ -193,7 +249,9 @@ export default function AnalogClock() {
         {/* LABELS LAYER */}
         {PRAYER_POSITIONS.map((node) => {
           const angleRad = (node.degree - 90) * (Math.PI / 180);
-          const textRadius = TRACK_RADIUS + (node.isMinor ? 45 : 55);
+          const textRadius =
+            TRACK_RADIUS +
+            (node.isMinor ? MINOR_LABEL_OFFSET : MAJOR_LABEL_OFFSET);
           const labelX = CENTER + textRadius * Math.cos(angleRad);
           const labelY = CENTER + textRadius * Math.sin(angleRad);
 
@@ -223,7 +281,9 @@ export default function AnalogClock() {
 
               {/* PRAYER TIME (If available) */}
               {prayerTimes?.[node.name] && (
-                <g transform={`translate(${labelX}, ${labelY + 16})`}>
+                <g
+                  transform={`translate(${labelX}, ${labelY + TIME_LABEL_OFFSET})`}
+                >
                   <rect
                     x="-25"
                     y="-10"
