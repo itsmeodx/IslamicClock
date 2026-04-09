@@ -22,6 +22,11 @@ export default function AnalogClock() {
   const SIZE = 500;
   const CENTER = SIZE / 2;
   const TRACK_RADIUS = 160;
+  const HAND_LENGTH = TRACK_RADIUS - 20;
+
+  const handAngleRad = ((progress?.degree ?? 0) - 90) * (Math.PI / 180);
+  const handX = CENTER + HAND_LENGTH * Math.cos(handAngleRad);
+  const handY = CENTER + HAND_LENGTH * Math.sin(handAngleRad);
 
   return (
     <div className="relative w-full h-full max-w-[500px] aspect-square flex items-center justify-center">
@@ -149,26 +154,20 @@ export default function AnalogClock() {
 
         {/* THE NEEDLE (Legacy Logic Recreation) */}
         {progress && (
-          <g transform={`translate(${CENTER}, ${CENTER})`}>
-            <motion.line
-              x1={0}
-              y1={0}
-              x2={0}
-              y2={-(TRACK_RADIUS - 20)}
-              stroke="#FF9F1C"
-              strokeWidth="4"
-              strokeLinecap="round"
-              animate={{
-                rotate: progress.degree,
-                originX: 0,
-                originY: 0,
-              }}
-              style={{
-                filter: "drop-shadow(0 0 8px rgba(255,159,28,0.8))",
-              }}
-              transition={{ type: "spring", stiffness: 20, damping: 10 }}
-            />
-          </g>
+          <motion.line
+            x1={CENTER}
+            y1={CENTER}
+            x2={handX}
+            y2={handY}
+            stroke="#FF9F1C"
+            strokeWidth="4"
+            strokeLinecap="round"
+            animate={{ x2: handX, y2: handY }}
+            style={{
+              filter: "drop-shadow(0 0 8px rgba(255,159,28,0.8))",
+            }}
+            transition={{ type: "spring", stiffness: 20, damping: 10 }}
+          />
         )}
 
         {/* CENTER PIVOT (Modern Hub) */}
