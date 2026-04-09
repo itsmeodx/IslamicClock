@@ -17,33 +17,28 @@ function shortestAngleDelta(from, to) {
 }
 
 export default function AnalogClock() {
-  const [isMobile, setIsMobile] = useState(false);
-  const { prayerTimes, settings } = useClock();
-  const initialDegree = getCurrentPrayerProgress(prayerTimes)?.degree ?? 0;
-  const [progress, setProgress] = useState(() =>
-    getCurrentPrayerProgress(prayerTimes),
-  );
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 639px)").matches;
+  });
+  const { prayerTimes, settings, currentTime } = useClock();
+  const progress = getCurrentPrayerProgress(prayerTimes, currentTime);
+  const initialDegree = progress?.degree ?? 0;
   const [displayDegree, setDisplayDegree] = useState(initialDegree);
   const displayDegreeRef = useRef(initialDegree);
   const language = settings.language;
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress(getCurrentPrayerProgress(prayerTimes));
-    }, 1000);
+    const media = window.matchMedia("(max-width: 639px)");
+    const onChange = (event) => setIsMobile(event.matches);
 
-    return () => clearInterval(timer);
-  }, [prayerTimes]);
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    }
 
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 640);
-    };
-
-    checkIfMobile();
-    window.addEventListener("resize", checkIfMobile);
-
-    return () => window.removeEventListener("resize", checkIfMobile);
+    media.addListener(onChange);
+    return () => media.removeListener(onChange);
   }, []);
 
   useEffect(() => {
