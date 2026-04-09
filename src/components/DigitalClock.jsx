@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { translations } from "../utils/translations";
 import { useClock } from "../hooks/useClock";
 import { getCurrentPrayerProgress } from "../utils/timeMath";
 
-export default function DigitalClock() {
+function DigitalClock() {
   const { prayerTimes, currentTime, settings } = useClock();
   const t = translations[settings.language];
   const { nextPrayer } = getCurrentPrayerProgress(prayerTimes) || {};
@@ -61,3 +62,5 @@ export default function DigitalClock() {
     </div>
   );
 }
+
+export default memo(DigitalClock);

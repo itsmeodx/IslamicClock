@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { PRAYER_POSITIONS, getCurrentPrayerProgress } from "../utils/timeMath";
 import { translations } from "../utils/translations";
 import { useClock } from "../hooks/useClock";
@@ -26,7 +26,7 @@ const EN_LABEL_TWEAKS = {
   Lastthird: { label: 8, time: -2 },
 };
 
-export default function AnalogClock() {
+function AnalogClock() {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 639px)").matches;
@@ -330,3 +330,5 @@ export default function AnalogClock() {
     </div>
   );
 }
+
+export default memo(AnalogClock);

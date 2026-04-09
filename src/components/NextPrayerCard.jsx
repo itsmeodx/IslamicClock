@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { translations } from "../utils/translations";
 import { getCurrentPrayerProgress } from "../utils/timeMath";
 import { useClock } from "../hooks/useClock";
 
-export default function NextPrayerCard() {
+function NextPrayerCard() {
   const { prayerTimes, settings } = useClock();
   const t = translations[settings.language];
   const progress = getCurrentPrayerProgress(prayerTimes);
@@ -27,3 +28,5 @@ export default function NextPrayerCard() {
     </div>
   );
 }
+
+export default memo(NextPrayerCard);

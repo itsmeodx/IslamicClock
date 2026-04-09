@@ -1,5 +1,6 @@
 import "./index.css";
 import App from "./App.jsx";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -28,10 +29,12 @@ persistQueryClient({
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ClockProvider>
-        <App />
-      </ClockProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ClockProvider>
+          <App />
+        </ClockProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

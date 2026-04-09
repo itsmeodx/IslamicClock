@@ -1,8 +1,9 @@
+import { memo } from "react";
 import { Moon, Sun } from "lucide-react";
 import { localizeNumbers } from "../utils/numberUtils";
 import { useClock } from "../hooks/useClock";
 
-export default function DateDisplay() {
+function DateDisplay() {
   const { hijriDate, currentTime, settings } = useClock();
   const language = settings.language;
 
@@ -46,3 +47,5 @@ export default function DateDisplay() {
     </div>
   );
 }
+
+export default memo(DateDisplay);
