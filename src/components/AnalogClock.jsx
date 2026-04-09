@@ -16,6 +16,16 @@ function shortestAngleDelta(from, to) {
   return delta;
 }
 
+const EN_LABEL_TWEAKS = {
+  Sunrise: { label: 8, time: -2 },
+  Dhuhr: { label: 0, time: -2 },
+  Asr: { label: 0, time: -2 },
+  Maghrib: { label: 9, time: 2 },
+  Firstthird: { label: 8, time: -2 },
+  Midnight: { label: 8, time: -2 },
+  Lastthird: { label: 8, time: -2 },
+};
+
 export default function AnalogClock() {
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -76,6 +86,17 @@ export default function AnalogClock() {
   const MAJOR_LABEL_OFFSET = isMobile ? 55 : 48;
   const MINOR_LABEL_OFFSET = isMobile ? 45 : 38;
   const TIME_LABEL_OFFSET = 16;
+
+  const getNodeOffset = (node) => {
+    const baseLabelOffset = node.isMinor ? MINOR_LABEL_OFFSET : MAJOR_LABEL_OFFSET;
+    const baseTimeOffset = TIME_LABEL_OFFSET;
+    const tweak = language !== "ar" ? EN_LABEL_TWEAKS[node.name] : undefined;
+
+    return {
+      labelOffset: baseLabelOffset + (tweak?.label ?? 0),
+      timeOffset: baseTimeOffset + (tweak?.time ?? 0),
+    };
+  };
 
   const handAngleRad = (displayDegree - 90) * (Math.PI / 180);
   const handX = CENTER + HAND_LENGTH * Math.cos(handAngleRad);
@@ -243,10 +264,9 @@ export default function AnalogClock() {
 
         {/* LABELS LAYER */}
         {PRAYER_POSITIONS.map((node) => {
+          const { labelOffset, timeOffset } = getNodeOffset(node);
           const angleRad = (node.degree - 90) * (Math.PI / 180);
-          const textRadius =
-            TRACK_RADIUS +
-            (node.isMinor ? MINOR_LABEL_OFFSET : MAJOR_LABEL_OFFSET);
+          const textRadius = TRACK_RADIUS + labelOffset;
           const labelX = CENTER + textRadius * Math.cos(angleRad);
           const labelY = CENTER + textRadius * Math.sin(angleRad);
 
@@ -276,9 +296,7 @@ export default function AnalogClock() {
 
               {/* PRAYER TIME (If available) */}
               {prayerTimes?.[node.name] && (
-                <g
-                  transform={`translate(${labelX}, ${labelY + TIME_LABEL_OFFSET})`}
-                >
+                <g transform={`translate(${labelX}, ${labelY + timeOffset})`}>
                   <rect
                     x="-25"
                     y="-10"
