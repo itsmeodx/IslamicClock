@@ -38,7 +38,7 @@ export default function DateDisplay() {
         {/* Gregorian Sector */}
         <div className="flex flex-col items-center gap-1 sm:gap-1.5">
           <Sun className="w-4 h-4 sm:w-6 sm:h-6 text-heritage-amber/80" />
-          <p className="text-xs sm:text-lg font-main font-bold uppercase heritage-gradient-text tracking-tight sm:tracking-widest">
+          <p className="text-xs sm:text-lg font-main font-bold heritage-gradient-text tracking-tight sm:tracking-wide">
             {gregorianDate}
           </p>
         </div>
