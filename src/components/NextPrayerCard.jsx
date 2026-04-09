@@ -18,7 +18,7 @@ function NextPrayerCard() {
           {t.prayers[progress?.nextPrayer] || "..."}
         </h3>
 
-        <div className="h-px w-[clamp(3rem,18vw,7rem)] bg-white/10 my-1 sm:my-4" />
+        <div className="h-px w-[clamp(3rem,18vw,7rem)] bg-white/10 my-1 sm:my-4 mt-2" />
 
         <span className="text-xs sm:text-xl text-white/50 uppercase font-bold tracking-[0.2em] sm:tracking-[0.3em] mt-0.5 sm:mt-2 mb-0.5 sm:mb-2">
           {progress?.isGracePeriod ? t.since : t.until}
