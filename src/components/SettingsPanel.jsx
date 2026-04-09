@@ -161,12 +161,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
   };
 
   // Prepare options
-  const calcMethodOptions = Object.entries(t.calculationMethods).map(
-    ([id, name]) => ({
-      value: parseInt(id),
-      label: name,
-    }),
-  );
+  const calcMethodOptions = t.calculationMethods;
 
   const dstOptions = [
     { value: -1, label: t.dstMinus1Hour },
