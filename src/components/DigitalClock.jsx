@@ -8,7 +8,7 @@ export default function DigitalClock() {
   const { nextPrayer } = getCurrentPrayerProgress(prayerTimes) || {};
 
   return (
-    <div className="flex-1 heritage-card flex flex-col items-center justify-between min-h-[350px] sm:min-h-[550px] overflow-hidden group">
+    <div className="flex-1 heritage-card flex flex-col items-center justify-between min-h-87.5 sm:min-h-137.5 overflow-hidden group">
       <div className="geometric-bg opacity-10" />
 
       {/* Central Content */}
@@ -29,14 +29,14 @@ export default function DigitalClock() {
           return (
             <div
               key={p}
-              className={`px-3 py-2 sm:px-6 sm:py-4 rounded-xl sm:rounded-3xl border transition-all duration-700 backdrop-blur-xl flex flex-col items-center min-w-0 sm:min-w-[120px] ${
+              className={`px-3 py-2 sm:px-6 sm:py-4 rounded-xl sm:rounded-3xl border transition-all duration-700 backdrop-blur-xl flex flex-col items-center min-w-0 sm:min-w-30 ${
                 isNext
                   ? "bg-heritage-amber/10 border-heritage-amber/50 shadow-[inset_0_0_20px_rgba(255,159,28,0.1)] sm:scale-110"
                   : "bg-slate-900/25 border-white/10"
               }`}
             >
               <span
-                className={`text-[8px] sm:text-xs uppercase font-bold tracking-[0.1em] sm:tracking-[0.2em] mb-0.5 sm:mb-1 ${
+                className={`text-[8px] sm:text-xs uppercase font-bold tracking-widest sm:tracking-[0.2em] mb-0.5 sm:mb-1 ${
                   isNext ? "text-heritage-amber" : "text-heritage-amber/60"
                 }`}
               >

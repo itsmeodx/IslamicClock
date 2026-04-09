@@ -21,7 +21,7 @@ export default function DateDisplay() {
   );
 
   return (
-    <div className="heritage-card flex-1 flex flex-col items-center justify-center text-center border-white/5 overflow-hidden min-h-[140px] sm:min-h-[250px] p-1.5 sm:p-6 transition-all duration-300">
+    <div className="heritage-card flex-1 flex flex-col items-center justify-center text-center border-white/5 overflow-hidden min-h-35 sm:min-h-62.5 p-1.5 sm:p-6 transition-all duration-300">
       <div className="geometric-bg opacity-10" />
 
       <div className="relative z-10 flex flex-col items-center justify-center gap-1.5 sm:gap-4 h-full w-full">
