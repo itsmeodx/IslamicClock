@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Settings, ChevronDown, Check, MapPin } from "lucide-react";
 import { translations } from "../utils/translations";
 import { useClock } from "../hooks/useClock";
