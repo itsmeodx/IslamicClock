@@ -49,6 +49,7 @@ export const translations = {
       Lastthird: "Last Third",
     },
     settings: "Settings",
+    settingsAria: "Open settings",
     language: "Language",
     clockMode: "Clock Mode",
     digital: "Digital",
@@ -77,6 +78,8 @@ export const translations = {
     hide: "Hide",
     show: "Show",
     refresh: "Refresh",
+    githubRepoAria: "Visit GitHub repository",
+    githubRepoTitle: "View project on GitHub",
     locationRequired: "Location Required",
     locationDesc:
       "Allow location access for precise local times, or search for your city manually below.",
@@ -160,6 +163,7 @@ export const translations = {
       Lastthird: "الثلث الأخير",
     },
     settings: "الإعدادات",
+    settingsAria: "فتح الإعدادات",
     language: "اللغة",
     clockMode: "وضع الساعة",
     digital: "رقمية",
@@ -188,6 +192,8 @@ export const translations = {
     hide: "إخفاء",
     show: "إظهار",
     refresh: "تحديث",
+    githubRepoAria: "زيارة مستودع GitHub",
+    githubRepoTitle: "عرض المشروع على GitHub",
     locationRequired: "تحديد الموقع مطلوب",
     locationDesc:
       "اسمح بالوصول إلى الموقع للحصول على أوقات دقيقة، أو ابحث عن مدينتك يدوياً أدناه.",

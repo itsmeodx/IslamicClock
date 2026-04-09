@@ -6,8 +6,22 @@ import AnalogClock from "./components/AnalogClock";
 import DigitalClock from "./components/DigitalClock";
 import NextPrayerCard from "./components/NextPrayerCard";
 import DateDisplay from "./components/DateDisplay";
+import GitHubIcon from "./components/icons/GitHubIcon";
+import HoverTooltip from "./components/common/HoverTooltip";
 import { translations } from "./utils/translations";
 import { MapPin, Settings } from "lucide-react";
+
+const headerActionButtonClass =
+  "w-12 h-12 heritage-card p-0! flex items-center justify-center border-heritage-gold/30 hover:bg-heritage-amber/10 transition-all duration-500 group";
+
+function HeaderAction({ tooltip, children }) {
+  return (
+    <div className="relative group/action">
+      {children}
+      <HoverTooltip text={tooltip} />
+    </div>
+  );
+}
 
 export default function App() {
   const {
@@ -53,19 +67,35 @@ export default function App() {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="w-12 h-12 heritage-card !p-0 flex items-center justify-center border-heritage-gold/30 hover:bg-heritage-amber/10 transition-all duration-500 group"
-          aria-label="Settings"
-        >
-          <Settings className="w-6 h-6 text-heritage-amber group-hover:rotate-90 transition-transform duration-500" />
-        </button>
+        <div className="flex items-center gap-2">
+          <HeaderAction tooltip={t.githubRepoTitle}>
+            <a
+              href="https://github.com/itsmeodx/IslamicClock"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={headerActionButtonClass}
+              aria-label={t.githubRepoAria}
+            >
+              <GitHubIcon className="w-5 h-5 text-heritage-amber group-hover:scale-110 transition-transform duration-300" />
+            </a>
+          </HeaderAction>
+
+          <HeaderAction tooltip={t.settings}>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className={headerActionButtonClass}
+              aria-label={t.settingsAria}
+            >
+              <Settings className="w-6 h-6 text-heritage-amber group-hover:rotate-90 transition-transform duration-500" />
+            </button>
+          </HeaderAction>
+        </div>
       </div>
 
       {/* MAIN CONTENT */}
       <main className="w-full max-w-5xl flex flex-col lg:flex-row gap-6 sm:gap-8 items-stretch h-full">
         {settings.clockMode === "analog" ? (
-          <div className="flex-1 heritage-card flex flex-col items-center justify-center min-h-[300px] sm:min-h-[400px]">
+          <div className="flex-1 heritage-card flex flex-col items-center justify-center min-h-75 sm:min-h-100">
             <div className="geometric-bg opacity-10" />
             <AnalogClock />
           </div>
@@ -73,7 +103,7 @@ export default function App() {
           <DigitalClock />
         )}
 
-        <div className="w-full lg:w-[350px] grid grid-cols-2 lg:flex lg:flex-col gap-4 sm:gap-6">
+        <div className="w-full lg:w-87.5 grid grid-cols-2 lg:flex lg:flex-col gap-4 sm:gap-6">
           <NextPrayerCard />
           <DateDisplay />
         </div>
