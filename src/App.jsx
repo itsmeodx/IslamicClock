@@ -39,7 +39,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-screen p-4 sm:p-8 flex flex-col items-center gap-8 font-main"
+      className="min-h-screen pt-8 sm:pt-14 pb-4 sm:pb-8 px-4 sm:px-8 flex flex-col items-center gap-8 font-main"
       dir={settings.language === "ar" ? "rtl" : "ltr"}
     >
       <div className="geometric-bg opacity-5" />
