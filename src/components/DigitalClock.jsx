@@ -23,6 +23,8 @@ function DigitalClock() {
         </h2>
       </div>
 
+        <div className="h-px w-[clamp(8rem,70vw,30rem)] bg-white/10 my-1 sm:my-4" />
+
       {/* Floating Prayer Cards */}
       <div className="w-full flex flex-wrap justify-center gap-2 sm:gap-4 p-4 sm:p-8 mt-auto z-10">
         {["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"].map((p) => {
