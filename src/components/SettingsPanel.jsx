@@ -11,6 +11,8 @@ function CustomSelect({ label, value, options, onChange }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event) => {
       if (
         containerRef.current &&
@@ -21,17 +23,12 @@ function CustomSelect({ label, value, options, onChange }) {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [isOpen]);
 
-  // Auto-scroll when opening if near bottom
+  // Instant scroll into view when opening (no smooth animation on mobile)
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        dropdownRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
-      }, 150);
+    if (isOpen && dropdownRef.current) {
+      dropdownRef.current.scrollIntoView({ block: "nearest" });
     }
   }, [isOpen]);
 
@@ -69,7 +66,9 @@ function CustomSelect({ label, value, options, onChange }) {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute top-full mt-2 w-full max-h-64 bg-slate-950/94 border border-white/20 rounded-xl shadow-2xl z-[100] overflow-y-auto custom-scrollbar backdrop-blur-3xl overflow-hidden"
+              transition={{ duration: 0.15 }}
+              className="absolute top-full mt-2 w-full max-h-64 bg-slate-950/94 border border-white/20 rounded-xl shadow-2xl z-100 overflow-y-auto custom-scrollbar backdrop-blur-3xl overflow-hidden"
+              style={{ transform: "translateZ(0)" }}
             >
               <div className="geometric-bg opacity-10" />
               <div className="p-1 relative z-10">
@@ -186,8 +185,10 @@ export default function SettingsPanel({ isOpen, onClose }) {
             initial={{ x: settings.language === "ar" ? "-100%" : "100%" }}
             animate={{ x: 0 }}
             exit={{ x: settings.language === "ar" ? "-100%" : "100%" }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
             className={`fixed ${settings.language === "ar" ? "left-0" : "right-0"} top-0 h-full w-full max-w-sm bg-slate-950/40 backdrop-blur-3xl z-50 border-heritage-gold/30 flex flex-col overflow-hidden ${settings.language === "ar" ? "border-r-2 shadow-[20px_0_60px_rgba(0,0,0,0.5)]" : "border-l-2 shadow-[-20px_0_60px_rgba(0,0,0,0.5)]"}`}
             dir={settings.language === "ar" ? "rtl" : "ltr"}
+            style={{ transform: "translateZ(0)" }}
           >
             <div className="geometric-bg opacity-5" />
 
@@ -317,8 +318,9 @@ export default function SettingsPanel({ isOpen, onClose }) {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
                         className="overflow-hidden"
+                        style={{ transform: "translateZ(0)" }}
                       >
                         <div className="pt-4 grid grid-cols-2 gap-3">
                           {Object.keys(settings.prayerOffsets).map((p) => (
@@ -334,7 +336,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
                                 onChange={(e) =>
                                   handleOffsetChange(p, e.target.value)
                                 }
-                                className="heritage-input !py-2.5 !px-3 text-center font-bold text-sm bg-white/5 border-white/10 focus:border-heritage-amber/50"
+                                className="heritage-input py-2.5! px-3! text-center font-bold text-sm bg-white/5 border-white/10 focus:border-heritage-amber/50"
                               />
                             </div>
                           ))}
