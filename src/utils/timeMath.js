@@ -7,7 +7,7 @@ export const PRAYER_POSITIONS = [
   { name: "Midnight", degree: 180, isMinor: true },
   { name: "Lastthird", degree: 210, isMinor: true },
   { name: "Fajr", degree: 240 },
-  { name: "Sunrise", degree: 270 },
+  { name: "Sunrise", degree: 270, isMinor: true },
 ];
 
 export function timeToMinutes(timeStr) {
