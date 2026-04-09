@@ -10,6 +10,8 @@ export const PRAYER_POSITIONS = [
   { name: "Sunrise", degree: 270, isMinor: true },
 ];
 
+const MARKER_NAMES = new Set(["Firstthird", "Midnight", "Lastthird"]);
+
 export function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
   // Handle "HH:MM" or "HH:MM (EST)" formats from API
@@ -24,25 +26,16 @@ export function getCurrentPrayerProgress(prayerTimes) {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // Map API times to our nodes, sorting them chronologically starting from midnight
-  const chronologicalNodes = [
-    { name: "Midnight", degree: 180, isMarker: true, isMinor: true },
-    { name: "Lastthird", degree: 210, isMarker: true, isMinor: true },
-    { name: "Fajr", degree: 240 },
-    { name: "Sunrise", degree: 270 },
-    { name: "Dhuhr", degree: 0 },
-    { name: "Asr", degree: 60 },
-    { name: "Maghrib", degree: 90 },
-    { name: "Isha", degree: 120 },
-    { name: "Firstthird", degree: 150, isMarker: true, isMinor: true },
-  ];
-
-  // Filter nodes that actually exist in the API response
-  const nodesWithTimes = chronologicalNodes
+  // Build progress nodes from PRAYER_POSITIONS so there's one source of truth.
+  const nodesWithTimes = PRAYER_POSITIONS
     .filter((node) => prayerTimes[node.name])
     .map((node) => {
       const min = timeToMinutes(prayerTimes[node.name]);
-      return { ...node, min };
+      return {
+        ...node,
+        isMarker: MARKER_NAMES.has(node.name),
+        min,
+      };
     });
 
   // Sort them by actual time in the day
@@ -124,7 +117,7 @@ export function getCurrentPrayerProgress(prayerTimes) {
   let displayNextName = nextNode.name;
   let isGracePeriod = false;
 
-  if (passedMinutes < 30 && !prevNode.isMarker) {
+  if (passedMinutes < 30 && !prevNode.isMarker && !prevNode.isMinor) {
     displayNextName = prevNode.name;
     isGracePeriod = true;
 
