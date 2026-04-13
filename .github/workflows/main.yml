@@ -46,7 +46,7 @@ jobs:
   deploy:
     name: Build & Deploy
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -87,10 +87,14 @@ jobs:
   package:
     name: Package Extensions
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    environment:
+      name: firefox-signing
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+      WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -107,10 +111,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Fetch Tags
+        run: git fetch --tags --force
+
+      - name: Set CI Version
+        id: set_ci_version
+        run: ./scripts/set-ci-version.sh "$GITHUB_OUTPUT"
+
       - name: Build Extensions
         run: pnpm run build:extension
 
+      - name: Publish Listed Version to AMO
+        if: steps.set_ci_version.outputs.should_publish == 'true'
+        run: FIREFOX_CHANNEL=listed REQUIRE_SIGNED_XPI=false pnpm run sign:firefox
+
+      - name: Build Unlisted Signed XPI for GitHub Release
+        if: steps.set_ci_version.outputs.should_publish == 'true'
+        run: |
+          set -euo pipefail
+          rm -rf extension-dist/signed
+          FIREFOX_CHANNEL=unlisted USE_AMO_METADATA=false REQUIRE_SIGNED_XPI=true pnpm run sign:firefox
+          cp extension-dist/signed/*.xpi firefox.xpi
+
       - name: Upload Artifacts
+        if: steps.set_ci_version.outputs.should_publish == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: IslamicClock-Extensions
@@ -119,13 +143,27 @@ jobs:
             firefox.xpi
 
       - name: Create Release
+        if: steps.set_ci_version.outputs.should_publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: "Latest Extension Build"
-          body: "This is an automated build of the Islamic Clock browser extensions."
+          tag_name: firefox-v${{ steps.set_ci_version.outputs.ci_version }}
+          name: "Firefox/Chrome Build v${{ steps.set_ci_version.outputs.ci_version }}"
+          body: |
+            ## Islamic Clock v${{ steps.set_ci_version.outputs.ci_version }}
+
+            Thank you for using Islamic Clock.
+
+            ### Downloads
+            - **Chrome / Edge / Brave**: `chrome.zip`
+            - **Firefox (direct install / testing)**: signed `firefox.xpi`
+
+            ### Firefox Add-ons Store
+            - This version has been submitted to the Firefox Add-ons Store.
+            - Store availability may take a little time while publishing completes.
+
+            > this is an automatically generated release.
           draft: false
-          prerelease: true
+          prerelease: false
           files: |
             chrome.zip
             firefox.xpi

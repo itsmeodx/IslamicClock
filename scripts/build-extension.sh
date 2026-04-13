@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Build the project with relative paths for extension compatibility
 echo "Building Islamic Clock core..."
@@ -8,12 +9,19 @@ pnpm exec vite build --base ./ --outDir extension-dist/chrome
 echo "Preparing Firefox version..."
 cp -r extension-dist/chrome extension-dist/firefox
 
+VERSION="$(node -p "require('./package.json').version")"
+
+if [[ -z "$VERSION" ]]; then
+  echo "Error: package.json version is empty."
+  exit 1
+fi
+
 # --- Generate Chrome Manifest ---
 cat > extension-dist/chrome/manifest.json <<EOF
 {
   "manifest_version": 3,
   "name": "Islamic Clock New Tab",
-  "version": "1.0.0",
+  "version": "$VERSION",
   "description": "Replaces the new tab page with a beautiful, premium Islamic Clock.",
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -32,7 +40,7 @@ cat > extension-dist/firefox/manifest.json <<EOF
 {
   "manifest_version": 3,
   "name": "Islamic Clock New Tab",
-  "version": "1.0.0",
+  "version": "$VERSION",
   "description": "Replaces the new tab page with a beautiful, premium Islamic Clock.",
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -44,7 +52,10 @@ cat > extension-dist/firefox/manifest.json <<EOF
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "islamic-clock@itsmeodx.github.io"
+      "id": "islamic-clock@itsmeodx.github.io",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
   },
   "permissions": []
