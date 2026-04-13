@@ -121,46 +121,68 @@ jobs:
       - name: Build Extensions
         run: pnpm run build:extension
 
-      - name: Build Unlisted Signed XPI for GitHub Release
+      - name: Submit Listed Version to AMO
         if: steps.set_ci_version.outputs.should_publish == 'true'
+        run: FIREFOX_CHANNEL=listed REQUIRE_SIGNED_XPI=false ALLOW_LISTED_TIMEOUT=true pnpm run sign:firefox
+
+      - name: Capture Signed Firefox XPI If Available
+        if: steps.set_ci_version.outputs.should_publish == 'true'
+        id: firefox_xpi
         run: |
           set -euo pipefail
-          rm -rf extension-dist/signed
-          FIREFOX_CHANNEL=unlisted USE_AMO_METADATA=false REQUIRE_SIGNED_XPI=true pnpm run sign:firefox
-          cp extension-dist/signed/*.xpi firefox.xpi
+          shopt -s nullglob
+          signed=(extension-dist/signed/*.xpi)
+
+          if (( ${#signed[@]} > 0 )); then
+            cp "${signed[0]}" firefox.xpi
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Signed Firefox XPI captured: ${signed[0]}"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No signed Firefox XPI available yet (AMO review likely pending)."
+          fi
+
+      - name: Prepare Package Metadata
+        if: steps.set_ci_version.outputs.should_publish == 'true'
+        id: package_meta
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ steps.firefox_xpi.outputs.found }}" == "true" ]]; then
+            package_files=$'chrome.zip\nfirefox.xpi'
+          else
+            package_files='chrome.zip'
+          fi
+
+          {
+            echo "files<<EOF"
+            echo "$package_files"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload Artifacts
         if: steps.set_ci_version.outputs.should_publish == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: IslamicClock-Extensions
-          path: |
-            chrome.zip
-            firefox.xpi
+          path: ${{ steps.package_meta.outputs.files }}
 
       - name: Create Release
         if: steps.set_ci_version.outputs.should_publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: firefox-v${{ steps.set_ci_version.outputs.ci_version }}
+          tag_name: v${{ steps.set_ci_version.outputs.ci_version }}
           name: "Firefox/Chrome Build v${{ steps.set_ci_version.outputs.ci_version }}"
           body: |
             ## Islamic Clock v${{ steps.set_ci_version.outputs.ci_version }}
 
-            Thank you for using Islamic Clock.
+            - Chrome: `chrome.zip`
+            - Firefox: signed `firefox.xpi` if available; otherwise attached after AMO approval.
+            - Listed AMO submission started by this workflow.
 
-            ### Downloads
-            - **Chrome / Edge / Brave**: `chrome.zip`
-            - **Firefox (direct install / testing)**: signed `firefox.xpi`
-
-            ### Firefox Add-ons Store
-            - Listed store submission is handled manually outside this workflow.
-
-            > this is an automatically generated release.
-          draft: false
+            > auto-generated release draft.
+          draft: true
           prerelease: false
-          files: |
-            chrome.zip
-            firefox.xpi
+          files: ${{ steps.package_meta.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

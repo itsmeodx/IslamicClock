@@ -73,10 +73,10 @@ function parseOutputFile(filePath) {
 test("computes next patch from existing tags and publishes", () => {
   const dir = setupRepo("1.0.0");
 
-  let r = run("git", ["tag", "firefox-v1.0.0"], dir);
+  let r = run("git", ["tag", "v1.0.0"], dir);
   assert.equal(r.status, 0, r.stderr);
 
-  r = run("git", ["tag", "firefox-v1.0.4"], dir);
+  r = run("git", ["tag", "v1.0.4"], dir);
   assert.equal(r.status, 0, r.stderr);
 
   // Move HEAD forward so existing tags are historical, not rerun tags on HEAD.
@@ -98,7 +98,7 @@ test("computes next patch from existing tags and publishes", () => {
 test("reuses existing tag on HEAD and skips publish", () => {
   const dir = setupRepo("1.0.0");
 
-  let r = run("git", ["tag", "firefox-v1.0.7"], dir);
+  let r = run("git", ["tag", "v1.0.7"], dir);
   assert.equal(r.status, 0, r.stderr);
 
   const outputPath = path.join(dir, "out.txt");
@@ -141,16 +141,16 @@ test("starts at base.0 when no matching tags exist", () => {
 test("ignores non-matching tags while calculating next patch", () => {
   const dir = setupRepo("1.0.0");
 
-  let r = run("git", ["tag", "firefox-v2.0.9"], dir);
+  let r = run("git", ["tag", "v2.0.9"], dir);
   assert.equal(r.status, 0, r.stderr);
 
-  r = run("git", ["tag", "firefox-v1.0.bad"], dir);
+  r = run("git", ["tag", "v1.0.bad"], dir);
   assert.equal(r.status, 0, r.stderr);
 
-  r = run("git", ["tag", "v1.0.8"], dir);
+  r = run("git", ["tag", "release-1.0.8"], dir);
   assert.equal(r.status, 0, r.stderr);
 
-  r = run("git", ["tag", "firefox-v1.0.3"], dir);
+  r = run("git", ["tag", "v1.0.3"], dir);
   assert.equal(r.status, 0, r.stderr);
 
   r = run("git", ["commit", "--allow-empty", "-m", "after-tags"], dir);
@@ -168,10 +168,10 @@ test("ignores non-matching tags while calculating next patch", () => {
 test("increments correctly across multi-digit patch numbers", () => {
   const dir = setupRepo("1.0.0");
 
-  let r = run("git", ["tag", "firefox-v1.0.9"], dir);
+  let r = run("git", ["tag", "v1.0.9"], dir);
   assert.equal(r.status, 0, r.stderr);
 
-  r = run("git", ["tag", "firefox-v1.0.10"], dir);
+  r = run("git", ["tag", "v1.0.10"], dir);
   assert.equal(r.status, 0, r.stderr);
 
   r = run("git", ["commit", "--allow-empty", "-m", "after-tags"], dir);

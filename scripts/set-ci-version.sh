@@ -6,18 +6,18 @@ OUTPUT_FILE="${1:-}"
 BASE_VERSION="$(node -e "const v=require('./package.json').version; const m=v.match(/^([0-9]+)\.([0-9]+)\.[0-9]+$/); if(!m){console.error('package.json version must be semver (major.minor.patch). Got: ' + v); process.exit(1);} process.stdout.write(m[1]+'.'+m[2]);")"
 ESCAPED_BASE="${BASE_VERSION//./\\.}"
 
-EXISTING_TAG_FOR_HEAD="$(git tag --points-at HEAD -l "firefox-v${BASE_VERSION}.*" \
-  | grep -E "^firefox-v${ESCAPED_BASE}\.[0-9]+$" \
+EXISTING_TAG_FOR_HEAD="$(git tag --points-at HEAD -l "v${BASE_VERSION}.*" \
+  | grep -E "^v${ESCAPED_BASE}\.[0-9]+$" \
   | sort -V \
   | tail -1 || true)"
 
 if [[ -n "${EXISTING_TAG_FOR_HEAD}" ]]; then
-  CI_VERSION="${EXISTING_TAG_FOR_HEAD#firefox-v}"
+  CI_VERSION="${EXISTING_TAG_FOR_HEAD#v}"
   SHOULD_PUBLISH="false"
 else
-  LAST_SUFFIX="$(git tag -l "firefox-v${BASE_VERSION}.*" \
-    | grep -E "^firefox-v${ESCAPED_BASE}\.[0-9]+$" \
-    | sed -E "s/^firefox-v${ESCAPED_BASE}\.([0-9]+)$/\1/" \
+  LAST_SUFFIX="$(git tag -l "v${BASE_VERSION}.*" \
+    | grep -E "^v${ESCAPED_BASE}\.[0-9]+$" \
+    | sed -E "s/^v${ESCAPED_BASE}\.([0-9]+)$/\1/" \
     | sort -n \
     | tail -1 || true)"
 

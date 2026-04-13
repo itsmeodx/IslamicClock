@@ -12,6 +12,7 @@ ARTIFACTS_DIR="extension-dist/signed"
 AMO_METADATA_FILE="amo-metadata.json"
 USE_AMO_METADATA="${USE_AMO_METADATA:-true}"
 REQUIRE_SIGNED_XPI="${REQUIRE_SIGNED_XPI:-auto}"
+ALLOW_LISTED_TIMEOUT="${ALLOW_LISTED_TIMEOUT:-false}"
 UPLOAD_UUID_FILE="extension-dist/firefox/.amo-upload-uuid"
 
 if [[ "$REQUIRE_SIGNED_XPI" == "auto" ]]; then
@@ -52,7 +53,21 @@ if [[ "$FIREFOX_CHANNEL" == "listed" && "$USE_AMO_METADATA" == "true" ]]; then
 fi
 
 echo "Submitting Firefox extension for $FIREFOX_CHANNEL signing..."
-pnpm exec web-ext sign "${sign_args[@]}"
+set +e
+sign_output="$(pnpm exec web-ext sign "${sign_args[@]}" 2>&1)"
+sign_exit=$?
+set -e
+
+printf '%s\n' "$sign_output"
+
+if [[ $sign_exit -ne 0 ]]; then
+    if [[ "$FIREFOX_CHANNEL" == "listed" && "$ALLOW_LISTED_TIMEOUT" == "true" ]] \
+      && grep -q "Approval: timeout exceeded" <<<"$sign_output"; then
+        echo "AMO listed review still pending; timeout allowed by ALLOW_LISTED_TIMEOUT=true."
+    else
+        exit "$sign_exit"
+    fi
+fi
 
 signed_files=()
 while IFS= read -r signed_file; do
