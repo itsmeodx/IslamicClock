@@ -65,14 +65,14 @@ EOF
 # --- Create Packaging ---
 echo "Creating packages..."
 cd extension-dist
-zip -r ../chrome.zip chrome > /dev/null
+zip -r ../islamic_clock-chrome.zip chrome > /dev/null
 cd firefox
-zip -r ../../firefox.xpi . > /dev/null
+zip -r ../../islamic_clock-firefox.xpi . > /dev/null
 cd ../..
 
 echo "-------------------------------------------------------"
 echo "Build complete!"
 echo "-------------------------------------------------------"
-echo "CHROME/EDGE/BRAVE: chrome.zip created."
-echo "FIREFOX: firefox.xpi created."
+echo "CHROME/EDGE/BRAVE: islamic_clock-chrome.zip created."
+echo "FIREFOX: islamic_clock-firefox.xpi created."
 echo "-------------------------------------------------------"

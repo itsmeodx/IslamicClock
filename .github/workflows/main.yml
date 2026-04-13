@@ -134,7 +134,7 @@ jobs:
           signed=(extension-dist/signed/*.xpi)
 
           if (( ${#signed[@]} > 0 )); then
-            cp "${signed[0]}" firefox.xpi
+            cp "${signed[0]}" islamic_clock-firefox.xpi
             echo "found=true" >> "$GITHUB_OUTPUT"
             echo "Signed Firefox XPI captured: ${signed[0]}"
           else
@@ -149,9 +149,9 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ steps.firefox_xpi.outputs.found }}" == "true" ]]; then
-            package_files=$'chrome.zip\nfirefox.xpi'
+            package_files=$'islamic_clock-chrome.zip\nislamic_clock-firefox.xpi'
           else
-            package_files='chrome.zip'
+            package_files='islamic_clock-chrome.zip'
           fi
 
           {
@@ -176,8 +176,8 @@ jobs:
           body: |
             ## Islamic Clock v${{ steps.set_ci_version.outputs.ci_version }}
 
-            - Chrome: `chrome.zip`
-            - Firefox: signed `firefox.xpi` if available; otherwise attached after AMO approval.
+            - Chrome: `islamic_clock-chrome.zip`
+            - Firefox: signed `islamic_clock-firefox.xpi` if available; otherwise attached after AMO approval.
             - Listed AMO submission started by this workflow.
 
             > auto-generated release draft.

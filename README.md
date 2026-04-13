@@ -32,11 +32,11 @@ The Islamic Prayer Clock is a continuous astronomical dial that visualizes the p
 Installs as your browser's "New Tab" page.
 
 <p align="center">
-  <a href="https://github.com/itsmeodx/IslamicClock/releases/download/latest/chrome.zip">
+  <a href="https://github.com/itsmeodx/IslamicClock/releases/latest/download/islamic_clock-chrome.zip">
     <img src="https://lh4.ggpht.com/x-plP9YZXhCaiDkTKQ5S29PwLmdi4feEKrMOtQle4NuoOaUgKUMH9pPWIg91da3anhSmw-G8erEIuU0d" width="140" alt="Google Chrome" title="Download for Google Chrome">
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/itsmeodx/IslamicClock/releases/download/latest/firefox.xpi">
+  <a href="https://github.com/itsmeodx/IslamicClock/releases/latest/download/islamic_clock-firefox.xpi">
     <img src="https://www.mozilla.org/media/img/structured-data/logo-firefox-browser.fbc7ffbb50fd.png" width="140" alt="Mozilla Firefox" title="Download for Mozilla Firefox">
   </a>
 </p>
@@ -75,7 +75,7 @@ pnpm run dev
 | Command                | Result                                                     |
 | :--------------------- | :--------------------------------------------------------- |
 | `pnpm build`           | Generates production web bundle in `dist/`                 |
-| `pnpm build:extension` | Packages extension artifacts (`chrome.zip`, `firefox.xpi`) |
+| `pnpm build:extension` | Packages extension artifacts (`islamic_clock-chrome.zip`, `islamic_clock-firefox.xpi`) |
 
 ## Contributing
 
