@@ -121,10 +121,6 @@ jobs:
       - name: Build Extensions
         run: pnpm run build:extension
 
-      - name: Publish Listed Version to AMO
-        if: steps.set_ci_version.outputs.should_publish == 'true'
-        run: FIREFOX_CHANNEL=listed REQUIRE_SIGNED_XPI=false pnpm run sign:firefox
-
       - name: Build Unlisted Signed XPI for GitHub Release
         if: steps.set_ci_version.outputs.should_publish == 'true'
         run: |
@@ -158,8 +154,7 @@ jobs:
             - **Firefox (direct install / testing)**: signed `firefox.xpi`
 
             ### Firefox Add-ons Store
-            - This version has been submitted to the Firefox Add-ons Store.
-            - Store availability may take a little time while publishing completes.
+            - Listed store submission is handled manually outside this workflow.
 
             > this is an automatically generated release.
           draft: false
