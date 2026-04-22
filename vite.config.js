@@ -18,7 +18,7 @@ export default defineConfig({
       ],
       manifest: {
         name: "Islamic Clock",
-        short_name: "IslamicClock",
+        short_name: "Islamic Clock",
         description: "A beautiful, premium Islamic Clock with offline support.",
         theme_color: "#0a1128",
         icons: [
