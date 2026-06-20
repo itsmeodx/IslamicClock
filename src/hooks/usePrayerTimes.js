@@ -1,5 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
+import {
+  windowMonths,
+  mergeWindow,
+  lookupDay,
+  correctedHijri,
+} from "../utils/hijriWindow";
 
 // UTILS
 const fetchPrayerCalendar = async ({
@@ -62,11 +68,8 @@ const getLocationName = async (lat, lng) => {
   }
 };
 
-const adjustHijriDate = (originalHijri, offset) => {
-  if (!originalHijri || offset === 0) return originalHijri;
-  const day = parseInt(originalHijri.day) + offset;
-  return { ...originalHijri, day: day.toString().padStart(2, "0") };
-};
+// Settings expose ±2; the prev/curr/next window covers exactly that range.
+const MAX_HIJRI_OFFSET = 2;
 
 // HOOK
 export function usePrayerTimes(settings) {
@@ -76,6 +79,12 @@ export function usePrayerTimes(settings) {
     hijriOffset = 0,
     prayerOffsets = {},
   } = settings || {};
+
+  // Clamp so a tampered value can't request a day outside the loaded window.
+  const offset = Math.max(
+    -MAX_HIJRI_OFFSET,
+    Math.min(MAX_HIJRI_OFFSET, hijriOffset),
+  );
 
   const [location, setLocation] = useState(() => {
     const saved = localStorage.getItem("last-known-location");
@@ -128,84 +137,64 @@ export function usePrayerTimes(settings) {
     (location.lat !== null && location.lng !== null)
   );
 
-  const queryClient = useQueryClient();
+  // Current month always; a neighbour only when date+offset crosses that month's edge.
+  const months = useMemo(() => windowMonths(date), [date]);
+  const dom = date.getDate();
+  const daysInMonth = new Date(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    0,
+  ).getDate();
+  const needPrev = offset < 0 && dom + offset < 1;
+  const needNext = offset > 0 && dom + offset > daysInMonth;
 
-  const {
-    data: monthData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: [
-      "prayerTimes",
-      date.getFullYear(),
-      date.getMonth() + 1,
-      location.lat,
-      location.lng,
-      location.name,
-      calculationMethod,
-      tune,
-    ],
-    queryFn: () =>
-      fetchPrayerCalendar({
-        year: date.getFullYear(),
-        month: date.getMonth() + 1,
-        location,
+  const results = useQueries({
+    queries: months.map((mo, i) => ({
+      queryKey: [
+        "prayerTimes",
+        mo.year,
+        mo.month,
+        location.lat,
+        location.lng,
+        location.name,
         calculationMethod,
         tune,
-      }),
-    enabled: hasLocation,
-    staleTime: 1000 * 60 * 60 * 24,
-  });
-
-  // PREFETCH NEXT MONTH (After the 20th)
-  useEffect(() => {
-    if (monthData && date.getDate() > 20 && hasLocation) {
-      const nextDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-      const nextYear = nextDate.getFullYear();
-      const nextMonth = nextDate.getMonth() + 1;
-
-      queryClient.prefetchQuery({
-        queryKey: [
-          "prayerTimes",
-          nextYear,
-          nextMonth,
-          location.lat,
-          location.lng,
-          location.name,
+      ],
+      queryFn: () =>
+        fetchPrayerCalendar({
+          year: mo.year,
+          month: mo.month,
+          location,
           calculationMethod,
           tune,
-        ],
-        queryFn: () =>
-          fetchPrayerCalendar({
-            year: nextYear,
-            month: nextMonth,
-            location,
-            calculationMethod,
-            tune,
-          }),
-        staleTime: 1000 * 60 * 60 * 24, // 24 hours
-      });
-    }
-  }, [
-    date,
-    monthData,
-    hasLocation,
-    location,
-    calculationMethod,
-    tune,
-    queryClient,
-  ]);
+        }),
+      enabled:
+        hasLocation &&
+        (i === 1 || (i === 0 && needPrev) || (i === 2 && needNext)),
+      staleTime: 1000 * 60 * 60 * 24,
+    })),
+  });
+
+  // windowMonths always yields [prev, current, next]; the current month drives
+  // loading/error state, and the three data refs are the merge's real dependencies.
+  const [prevMonth, currentMonth, nextMonth] = results;
+  const isLoading = currentMonth.isLoading;
+  const error = currentMonth.error;
+  // useQueries returns a fresh array each render, so memoizing this buys nothing.
+  const refetch = () => results.forEach((r) => r.refetch());
+
+  const win = useMemo(
+    () => mergeWindow([prevMonth.data, currentMonth.data, nextMonth.data]),
+    [prevMonth.data, currentMonth.data, nextMonth.data],
+  );
 
   const { prayerTimes, hijriDate } = useMemo(() => {
-    const day = date.getDate();
-    if (!monthData || !monthData[day - 1])
-      return { prayerTimes: null, hijriDate: null };
-    const dayData = monthData[day - 1];
+    const today = lookupDay(win, date);
+    if (!today) return { prayerTimes: null, hijriDate: null };
 
     const sanitizedTimings = {};
-    Object.keys(dayData.timings).forEach((key) => {
-      const timeStr = dayData.timings[key];
+    Object.keys(today.timings).forEach((key) => {
+      const timeStr = today.timings[key];
       if (typeof timeStr === "string" && timeStr.includes(":")) {
         const match = timeStr.match(/\d{1,2}:\d{2}/);
         if (!match) {
@@ -221,9 +210,9 @@ export function usePrayerTimes(settings) {
 
     return {
       prayerTimes: sanitizedTimings,
-      hijriDate: adjustHijriDate(dayData.date.hijri, hijriOffset),
+      hijriDate: correctedHijri(win, date, offset),
     };
-  }, [monthData, date, dstOffset, hijriOffset]);
+  }, [win, date, dstOffset, offset]);
 
   const saveLocation = useCallback((newLoc) => {
     setLocation(newLoc);
