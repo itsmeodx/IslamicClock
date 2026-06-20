@@ -33,13 +33,13 @@ environment `firefox-signing`.
 3. Add environment secrets:
    - WEB_EXT_API_KEY
    - WEB_EXT_API_SECRET
-4. Re-run workflow.
+4. Push a `v*` tag to trigger a release.
 
-The package job reads these secrets and runs `pnpm sign:firefox`.
-If both secrets exist, CI signs the Firefox build and replaces unsigned
-`firefox.xpi` before uploading artifacts and creating release. If publish
-is required and either secret is missing, package job fails instead of
-publishing unsigned build.
+The release workflow (`release.yml`) runs only on a `v*` tag. Its package job
+reads these secrets and runs `pnpm sign:firefox` to submit the listed build to
+AMO. If either secret is missing, that step fails and no release is published —
+CI never ships an unsigned or unsubmitted build. See `docs/versioning.md` for how
+releases are cut.
 
 ## Sign for Listed Distribution
 
@@ -67,4 +67,9 @@ Use this channel for self-hosted/private distribution.
 - Keep browser_specific_settings.gecko.id stable in Firefox manifest.
 - If signing fails, verify credentials and AMO account permissions.
 - First listed submission may require AMO review before public install.
+- Set `AMO_APPROVAL_TIMEOUT` (milliseconds) to make `sign:firefox` wait for AMO
+  approval and download the signed `.xpi` in the same run. CI sets `900000`
+  (15 min) so most listed releases attach the signed Firefox build automatically;
+  slow reviews fall back to a Chrome-only draft (attach the `.xpi` manually once
+  approved). Left unset locally, signing returns immediately.
 - Release version rules are documented in `docs/versioning.md`.

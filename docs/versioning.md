@@ -1,28 +1,47 @@
 # Release Versioning
 
-This project uses a SemVer package version and a CI release version derived from its `major.minor` base.
+Releases are cut from git tags. `package.json` is the single source of truth for
+the version, and pushing a `v*` tag triggers the release workflow.
 
 ## Version Format
 
-- `package.json` version must be SemVer: `major.minor.patch` (example: `1.0.0`).
-- CI release version is `major.minor.patch` (example: `1.0.5`).
+- `package.json` version is SemVer: `major.minor.patch` (example: `1.0.6`).
+- Each release has a matching tag `v<version>` (example: `v1.0.6`).
 
-## How Patch Is Calculated
+## Cutting a Release
 
-- CI extracts `major.minor` from `package.json` version.
-- CI fetches tags and looks for tags matching `v<major.minor>.<patch>`.
-- It finds the highest existing patch for the current base version.
-- Next patch is highest + 1.
-- If no tags exist for the current base, patch starts at `0`.
-- If the current commit already has a matching `v<major.minor>.<patch>` tag, CI reuses it (no new publish).
+Use `pnpm version`, which bumps `package.json`, commits it, and creates the
+matching annotated tag in one atomic step — no hand-edited version strings:
 
-## Examples
+```bash
+pnpm version patch     # 1.0.6 -> 1.0.7  (bug fixes)
+pnpm version minor     # 1.0.6 -> 1.1.0  (features)
+pnpm version major     # 1.0.6 -> 2.0.0  (breaking changes)
 
-- `package.json` is `1.0.0`, highest tag `v1.0.4` -> next release `1.0.5`.
-- Base changes to `1.1.x` (example `1.1.0`) with no matching tags -> next release `1.1.0`.
+git push --follow-tags # push the commit (deploys web app) AND the tag (cuts release)
+```
+
+The working tree must be clean before running `pnpm version`.
+
+## What a Tag Triggers
+
+Pushing a `v*` tag runs [release.yml](../.github/workflows/release.yml):
+
+1. **Asserts** the tag matches `package.json` — the release fails on a mismatch,
+   so the tag and the version can never silently diverge.
+2. Builds the Chrome and Firefox extension packages.
+3. Submits the listed Firefox build to AMO for review.
+4. Creates a draft GitHub Release with the packaged artifacts.
+
+Pushing a commit to `main` **without** a tag only runs [ci.yml](../.github/workflows/ci.yml)
+(verify + deploy the web app). It does **not** cut a release.
 
 ## Why This Scheme
 
-- Build numbers reset naturally when you bump minor version.
-- Releases remain monotonic within each `major.minor` line.
-- Avoids coupling version numbers to global GitHub run count.
+- A release is an explicit act — a tag — not a side effect of every commit. This
+  matches Mozilla's guidance against signing add-ons on every commit or nightly
+  build.
+- The tag and `package.json` can never drift: CI rejects a tag that disagrees
+  with the committed version.
+- `pnpm version` makes the bump atomic, so the commit, the version, and the tag
+  always agree by construction.

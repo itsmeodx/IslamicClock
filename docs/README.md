@@ -16,7 +16,7 @@ For installation and a high-level feature list, see the root [README](../README.
 | [Configuration](./configuration.md)     | User-facing settings: calculation methods, prayer/DST/Hijri offsets, languages.                                 |
 | [External APIs](./external-apis.md)     | The third-party services used (Aladhan, Photon, BigDataCloud) and the caching strategy.                         |
 | [Development](./development.md)         | Setup, scripts, conventions, theming, and testing.                                                              |
-| [Versioning](./versioning.md)           | How CI derives release version numbers.                                                                         |
+| [Versioning](./versioning.md)           | How releases are cut from tags (the `pnpm version` flow).                                                       |
 | [Firefox Signing](./firefox-signing.md) | AMO signing for listed and unlisted Firefox builds.                                                             |
 
 ## Quick orientation

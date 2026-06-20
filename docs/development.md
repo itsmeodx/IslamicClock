@@ -79,28 +79,29 @@ RTL is handled at the component level via the `dir` attribute (set from
 ## Testing
 
 Tests use the **built-in Node test runner** (`node --test`), no extra framework.
-The current suite covers the dial math and the CI versioning script:
+The current suite covers the dial math:
 
 - [src/utils/timeMath.test.js](../src/utils/timeMath.test.js) — prayer→angle math,
   wrap-around, grace period.
-- [scripts/set-ci-version.test.mjs](../scripts/set-ci-version.test.mjs) — the
-  version-derivation algorithm.
 
 Run everything with `pnpm test`. Per project convention, add tests when changing
-the math in `timeMath.js` or the versioning logic.
+the math in `timeMath.js`.
 
 ## CI/CD
 
-[.github/workflows/main.yml](../.github/workflows/main.yml) runs on push/PR to
-`main`:
+Two workflows split CI from releases:
 
-1. **verify** — lint + typecheck.
-2. **deploy** — build and publish `dist/` to GitHub Pages.
-3. **package** — derive the release version
-   ([set-ci-version.sh](../scripts/set-ci-version.sh)), build the extensions, sign
-   & submit the Firefox build to AMO when a new version is due, and create a
-   GitHub Release with the Chrome `.zip` and Firefox `.xpi`.
+- **[ci.yml](../.github/workflows/ci.yml)** runs on push/PR to `main` and manual
+  dispatch:
+  1. **verify** — lint + typecheck.
+  2. **deploy** — build and publish `dist/` to GitHub Pages (push to `main` /
+     dispatch only).
+- **[release.yml](../.github/workflows/release.yml)** runs only when a `v*` tag is
+  pushed: it asserts the tag matches `package.json`, builds the extensions, submits
+  the listed Firefox build to AMO, and creates a draft GitHub Release with the
+  Chrome `.zip` and Firefox `.xpi`.
 
-See [Versioning](./versioning.md) for how the release number is computed and
-[Firefox Signing](./firefox-signing.md) for the AMO credentials the `package` job
-needs (GitHub environment `firefox-signing`).
+A plain commit to `main` deploys the web app but does **not** cut a release —
+releases are triggered by tags. See [Versioning](./versioning.md) for the
+`pnpm version` release flow and [Firefox Signing](./firefox-signing.md) for the
+AMO credentials the release job needs (GitHub environment `firefox-signing`).
