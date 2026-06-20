@@ -1,0 +1,121 @@
+name: Release
+
+# Ship by pushing a SemVer tag: pnpm version <bump> && git push --follow-tags
+on:
+  push:
+    tags: ["v[0-9]*.[0-9]*.[0-9]*"]
+  workflow_dispatch: # re-run on a tag ref
+
+permissions:
+  contents: read
+
+# Don't cancel releases; dedupe double-fires of a tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Package & Release Extensions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create release + upload assets
+    environment:
+      name: firefox-signing
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+      WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package.json
+        id: version
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$TAG_VERSION" != "$PKG_VERSION" ]]; then
+            echo "::error::Tag v${TAG_VERSION} does not match package.json version ${PKG_VERSION}. Release with 'pnpm version <patch|minor|major>'."
+            exit 1
+          fi
+          echo "version=${TAG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing version ${TAG_VERSION}"
+
+      - name: Build Extensions
+        run: pnpm run build:extension
+
+      - name: Submit Listed Version to AMO
+        # AMO_APPROVAL_TIMEOUT: wait 15 min to capture the signed .xpi in-run.
+        run: FIREFOX_CHANNEL=listed REQUIRE_SIGNED_XPI=false ALLOW_LISTED_TIMEOUT=true AMO_APPROVAL_TIMEOUT=900000 pnpm run sign:firefox
+
+      - name: Capture Signed Firefox XPI If Available
+        id: firefox_xpi
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          signed=(extension-dist/signed/*.xpi)
+
+          if (( ${#signed[@]} > 0 )); then
+            cp "${signed[0]}" islamic_clock-firefox.xpi
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Signed Firefox XPI captured: ${signed[0]}"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No signed Firefox XPI available yet (AMO review likely pending)."
+          fi
+
+      - name: Prepare Package Metadata
+        id: package_meta
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ steps.firefox_xpi.outputs.found }}" == "true" ]]; then
+            package_files=$'islamic_clock-chrome.zip\nislamic_clock-firefox.xpi'
+          else
+            package_files='islamic_clock-chrome.zip'
+          fi
+
+          {
+            echo "files<<EOF"
+            echo "$package_files"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: IslamicClock-Extensions
+          path: ${{ steps.package_meta.outputs.files }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Firefox/Chrome Build v${{ steps.version.outputs.version }}"
+          body: |
+            ## Islamic Clock v${{ steps.version.outputs.version }}
+
+            - Chrome: `islamic_clock-chrome.zip`
+            - Firefox: signed `islamic_clock-firefox.xpi` if available; otherwise attached after AMO approval.
+            - Listed AMO submission started by this workflow.
+
+            > auto-generated release draft.
+          draft: true
+          prerelease: false
+          files: ${{ steps.package_meta.outputs.files }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

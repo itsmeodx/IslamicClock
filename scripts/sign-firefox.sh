@@ -52,6 +52,11 @@ if [[ "$FIREFOX_CHANNEL" == "listed" && "$USE_AMO_METADATA" == "true" ]]; then
     sign_args+=(--amo-metadata "$AMO_METADATA_FILE")
 fi
 
+# CI sets this to wait for AMO approval and capture the signed .xpi in-run.
+if [[ -n "${AMO_APPROVAL_TIMEOUT:-}" ]]; then
+    sign_args+=(--approval-timeout "$AMO_APPROVAL_TIMEOUT")
+fi
+
 echo "Submitting Firefox extension for $FIREFOX_CHANNEL signing..."
 set +e
 sign_output="$(pnpm exec web-ext sign "${sign_args[@]}" 2>&1)"
