@@ -116,6 +116,7 @@ jobs:
             > auto-generated release draft.
           draft: true
           prerelease: false
+          generate_release_notes: true
           files: ${{ steps.package_meta.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
