@@ -10,6 +10,8 @@ export const PRAYER_POSITIONS = [
   { name: "Sunrise", degree: 270, isMinor: true },
 ];
 
+const MINUTES_PER_DAY = 24 * 60;
+
 export function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
   // Handle "HH:MM" or "HH:MM (EST)" formats from API
@@ -23,121 +25,115 @@ export function getCurrentPrayerProgress(prayerTimes, currentTime = new Date()) 
 
   const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
 
-  // Build progress nodes from PRAYER_POSITIONS so there's one source of truth.
-  const nodesWithTimes = PRAYER_POSITIONS
-    .filter((node) => prayerTimes[node.name])
-    .map((node) => {
-      const min = timeToMinutes(prayerTimes[node.name]);
-      return {
-        ...node,
-        isMarker: Boolean(node.isMarker),
-        min,
-      };
-    });
+  // Build nodes from PRAYER_POSITIONS so positions and times share one source.
+  const nodes = PRAYER_POSITIONS.filter((node) => prayerTimes[node.name]).map(
+    (node) => ({
+      ...node,
+      isMarker: Boolean(node.isMarker),
+      isMinor: Boolean(node.isMinor),
+      min: timeToMinutes(prayerTimes[node.name]),
+    }),
+  );
 
-  if (nodesWithTimes.length === 0) return null;
+  if (nodes.length === 0) return null;
 
-  if (nodesWithTimes.length === 1) {
-    const singleNode = nodesWithTimes[0];
+  if (nodes.length === 1) {
+    const only = nodes[0];
     return {
-      degree: singleNode.degree,
-      nextPrayer: singleNode.name,
+      degree: only.degree,
+      nextPrayer: only.name,
       remainingTime: "--:--:--",
       percentage: 0,
-      prevName: singleNode.name,
+      prevName: only.name,
       isGracePeriod: false,
     };
   }
 
-  // Sort them by actual time in the day
-  nodesWithTimes.sort((a, b) => a.min - b.min);
+  // Cyclic minute distances, so the prayer day wraps correctly across midnight.
+  const since = (min) => (currentMinutes - min + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const until = (min) => (min - currentMinutes + MINUTES_PER_DAY) % MINUTES_PER_DAY;
 
-  let prevNode = nodesWithTimes[nodesWithTimes.length - 1]; // Assume last node of previous day
-  let nextNode = nodesWithTimes[0];
-  let found = false;
-
-  for (let i = 0; i < nodesWithTimes.length; i++) {
-    if (currentMinutes < nodesWithTimes[i].min && !nodesWithTimes[i].isMarker) {
-      nextNode = nodesWithTimes[i];
-      prevNode =
-        i === 0
-          ? nodesWithTimes[nodesWithTimes.length - 1]
-          : nodesWithTimes[i - 1];
-      found = true;
-      break;
+  // Immediate surrounding anchors (markers included) for a smooth, monotonic hand.
+  let prevAnchor = nodes[0];
+  let nextAnchor = nodes[0];
+  let bestSince = Infinity;
+  let bestUntil = Infinity;
+  for (const node of nodes) {
+    const s = since(node.min);
+    if (s < bestSince) {
+      bestSince = s;
+      prevAnchor = node;
+    }
+    const u = until(node.min);
+    if (u > 0 && u < bestUntil) {
+      bestUntil = u;
+      nextAnchor = node;
     }
   }
 
-  // If not found, it means current time is after the last prayer of the day (e.g. late night Isha to Fajr)
-  if (!found) {
-    prevNode = nodesWithTimes[nodesWithTimes.length - 1];
-    // Find the first major prayer of the next day
-    nextNode = nodesWithTimes.find((n) => !n.isMarker) || nodesWithTimes[0];
+  // Interpolate the hand angle between the two anchors (0 <= percentage <= 1).
+  const gap =
+    (nextAnchor.min - prevAnchor.min + MINUTES_PER_DAY) % MINUTES_PER_DAY ||
+    MINUTES_PER_DAY;
+  const passed =
+    (currentMinutes - prevAnchor.min + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const percentage = passed / gap;
+
+  const diff = (nextAnchor.degree - prevAnchor.degree + 360) % 360;
+  const currentDegree = (prevAnchor.degree + diff * percentage) % 360;
+
+  // Countdown targets the next real prayer, skipping the night markers.
+  let nextPrayerNode = nextAnchor;
+  let bestPrayerUntil = Infinity;
+  for (const node of nodes) {
+    if (node.isMarker) continue;
+    const u = until(node.min) || MINUTES_PER_DAY; // a prayer exactly now -> next one
+    if (u < bestPrayerUntil) {
+      bestPrayerUntil = u;
+      nextPrayerNode = node;
+    }
   }
 
-  // Calculate interpolation
-  let timeGap = nextNode.min - prevNode.min;
-  let timePassed = currentMinutes - prevNode.min;
-
-  if (timeGap <= 0) timeGap += 24 * 60; // Crosses midnight
-  if (timePassed < 0) timePassed += 24 * 60;
-
-  const percentage = timePassed / timeGap;
-
-  // Calculate degrees (handling angular wrap around 360/0 for Sunrise -> Dhuhr)
-  let prevDegree = prevNode.degree;
-  let nextDegree = nextNode.degree;
-
-  // Normalizing angle differences
-  let diff = nextDegree - prevDegree;
-  // Make sure we traverse the shortest path or specifically forward direction
-  while (diff < 0) diff += 360;
-
-  let currentDegree = (prevDegree + diff * percentage) % 360;
-
-  // Calculate absolute target date for the next prayer
   const targetDate = new Date(currentTime);
-  const targetH = Math.floor(nextNode.min / 60);
-  const targetM = nextNode.min % 60;
+  targetDate.setHours(
+    Math.floor(nextPrayerNode.min / 60),
+    nextPrayerNode.min % 60,
+    0,
+    0,
+  );
+  if (targetDate <= currentTime) targetDate.setDate(targetDate.getDate() + 1);
 
-  targetDate.setHours(targetH, targetM, 0, 0);
+  const totalRemainingSeconds = Math.max(
+    0,
+    Math.floor((targetDate - currentTime) / 1000),
+  );
+  const pad = (n) => n.toString().padStart(2, "0");
+  let countdownStr =
+    `${pad(Math.floor(totalRemainingSeconds / 3600))}:` +
+    `${pad(Math.floor((totalRemainingSeconds % 3600) / 60))}:` +
+    `${pad(totalRemainingSeconds % 60)}`;
 
-  // If target is in the past compared to now (e.g. crossing midnight), it must be for tomorrow
-  if (targetDate < currentTime) {
-    targetDate.setDate(targetDate.getDate() + 1);
+  // Grace period: keep a just-started major prayer active for 30 minutes.
+  let prevMajor = null;
+  let bestMajorSince = Infinity;
+  for (const node of nodes) {
+    if (node.isMarker || node.isMinor) continue;
+    const s = since(node.min);
+    if (s < bestMajorSince) {
+      bestMajorSince = s;
+      prevMajor = node;
+    }
   }
 
-  const totalDiffMs = Math.max(0, targetDate - currentTime);
-  const totalRemainingSeconds = Math.floor(totalDiffMs / 1000);
-
-  const hoursRemaining = Math.floor(totalRemainingSeconds / 3600);
-  const minsRemaining = Math.floor((totalRemainingSeconds % 3600) / 60);
-  const secsRemaining = totalRemainingSeconds % 60;
-
-  // Refined HH:MM:SS format
-  const h = hoursRemaining.toString().padStart(2, "0");
-  const m = minsRemaining.toString().padStart(2, "0");
-  const s = secsRemaining.toString().padStart(2, "0");
-  let countdownStr = `${h}:${m}:${s}`;
-
-  // Grace Period Logic: Keep previous prayer active for 30 mins after start
-  let passedMinutes = currentMinutes - prevNode.min;
-  if (passedMinutes < 0) passedMinutes += 24 * 60;
-
-  let displayNextName = nextNode.name;
+  let displayNextName = nextPrayerNode.name;
   let isGracePeriod = false;
-
-  if (passedMinutes < 30 && !prevNode.isMarker && !prevNode.isMinor) {
-    displayNextName = prevNode.name;
+  if (prevMajor && bestMajorSince < 30) {
     isGracePeriod = true;
-
-    // Show elapsed time instead of remaining
-    const hElapsed = Math.floor(passedMinutes / 60)
-      .toString()
-      .padStart(2, "0");
-    const mElapsed = (passedMinutes % 60).toString().padStart(2, "0");
-    const sElapsed = currentTime.getSeconds().toString().padStart(2, "0");
-    countdownStr = `${hElapsed}:${mElapsed}:${sElapsed}`;
+    displayNextName = prevMajor.name;
+    countdownStr =
+      `${pad(Math.floor(bestMajorSince / 60))}:` +
+      `${pad(bestMajorSince % 60)}:` +
+      `${pad(currentTime.getSeconds())}`;
   }
 
   return {
@@ -145,7 +141,7 @@ export function getCurrentPrayerProgress(prayerTimes, currentTime = new Date()) 
     nextPrayer: displayNextName,
     remainingTime: countdownStr,
     percentage: Math.round(percentage * 100),
-    prevName: prevNode.name,
+    prevName: prevAnchor.name,
     isGracePeriod,
   };
 }
