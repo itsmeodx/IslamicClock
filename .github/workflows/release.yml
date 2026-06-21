@@ -112,9 +112,9 @@ jobs:
             - Chrome: `islamic_clock-chrome.zip`
             - Firefox: signed `islamic_clock-firefox.xpi` if available; otherwise attached after AMO approval.
             - Listed AMO submission started by this workflow.
-
-            > auto-generated release draft.
-          draft: true
+          # Publish automatically once AMO returns the signed XPI; otherwise leave a
+          # draft to attach the .xpi after manual approval.
+          draft: ${{ steps.firefox_xpi.outputs.found != 'true' }}
           prerelease: false
           generate_release_notes: true
           files: ${{ steps.package_meta.outputs.files }}
