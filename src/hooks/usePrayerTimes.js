@@ -8,6 +8,8 @@ import {
   MAX_HIJRI_OFFSET,
 } from "../utils/hijriWindow";
 
+export const MAX_DST_OFFSET = 1;
+
 // UTILS
 const fetchPrayerCalendar = async ({
   year,
