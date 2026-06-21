@@ -2,6 +2,9 @@
 // shifted gregorian day (so month/year roll correctly), not by adding to the number.
 // Prev/curr/next gregorian months are merged so the shift stays in range at edges.
 
+// Supported hijri offset range; the prev/curr/next window covers exactly this.
+export const MAX_HIJRI_OFFSET = 2;
+
 const pad = (n) => String(n).padStart(2, "0");
 
 export const dayKey = (d) =>

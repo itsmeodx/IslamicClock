@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Settings, ChevronDown, Check, MapPin } from "lucide-react";
 import { translations } from "../utils/translations";
+import { MAX_HIJRI_OFFSET } from "../utils/hijriWindow";
 import { useClock } from "../hooks/useClock";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -169,13 +170,12 @@ export default function SettingsPanel({ isOpen, onClose }) {
     { value: 1, label: t.dstPlus1Hour },
   ];
 
-  const hijriOptions = [
-    { value: -2, label: t.hijriMinus2Days },
-    { value: -1, label: t.hijriMinus1Day },
-    { value: 0, label: t.hijriNoChange },
-    { value: 1, label: t.hijriPlus1Day },
-    { value: 2, label: t.hijriPlus2Days },
-  ];
+  const hijriOffset = settings.hijriOffset || 0;
+  const stepHijri = (delta) =>
+    handleChange(
+      "hijriOffset",
+      Math.max(-MAX_HIJRI_OFFSET, Math.min(MAX_HIJRI_OFFSET, hijriOffset + delta)),
+    );
 
   return (
     <AnimatePresence>
@@ -355,12 +355,41 @@ export default function SettingsPanel({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <CustomSelect
-                label={t.hijriOffset}
-                value={settings.hijriOffset}
-                options={hijriOptions}
-                onChange={(val) => handleChange("hijriOffset", val)}
-              />
+              {/* Hijri Date Adjustment */}
+              <div className="space-y-3">
+                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-1">
+                  {t.hijriOffset}
+                </label>
+                <p className="text-[10px] text-white/40 px-1 mb-2">
+                  {t.hijriOffsetHint}
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => stepHijri(-1)}
+                    disabled={hijriOffset <= -MAX_HIJRI_OFFSET}
+                    aria-label={`${t.hijriOffset} −1`}
+                    className="w-12 h-12 shrink-0 rounded-xl border-2 border-white/10 bg-white/5 text-2xl font-bold text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    −
+                  </button>
+                  <div className="flex-1 h-12 flex items-center justify-center gap-1.5 rounded-xl border-2 border-heritage-amber/30 bg-heritage-amber/10">
+                    <span className="text-lg font-bold text-white tabular-nums">
+                      {(hijriOffset > 0 ? "+" : "") + hijriOffset}
+                    </span>
+                    <span className="text-xs text-white/50">{t.daysUnit}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => stepHijri(1)}
+                    disabled={hijriOffset >= MAX_HIJRI_OFFSET}
+                    aria-label={`${t.hijriOffset} +1`}
+                    className="w-12 h-12 shrink-0 rounded-xl border-2 border-white/10 bg-white/5 text-2xl font-bold text-white hover:bg-white/10 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* 3. FIXED FOOTER */}

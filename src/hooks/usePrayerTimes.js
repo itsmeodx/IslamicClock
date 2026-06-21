@@ -5,6 +5,7 @@ import {
   mergeWindow,
   lookupDay,
   correctedHijri,
+  MAX_HIJRI_OFFSET,
 } from "../utils/hijriWindow";
 
 // UTILS
@@ -67,9 +68,6 @@ const getLocationName = async (lat, lng) => {
     return null;
   }
 };
-
-// Settings expose ±2; the prev/curr/next window covers exactly that range.
-const MAX_HIJRI_OFFSET = 2;
 
 // HOOK
 export function usePrayerTimes(settings) {
