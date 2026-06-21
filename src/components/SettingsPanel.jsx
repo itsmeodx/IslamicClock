@@ -215,7 +215,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
             </div>
 
             {/* 2. SCROLLABLE BODY */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 relative z-10 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 relative z-10 custom-scrollbar">
               {/* Location Management */}
               <div className="space-y-3">
                 <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
