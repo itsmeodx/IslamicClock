@@ -1,8 +1,10 @@
 import { Plus, Minus } from "lucide-react";
+import SettingLabel from "./SettingLabel";
 
 // Generic − / value / + stepper for small bounded integer settings.
 export default function Stepper({
   label,
+  hint,
   value,
   min,
   max,
@@ -16,9 +18,7 @@ export default function Stepper({
 
   return (
     <div className="space-y-3">
-      <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
-        {label}
-      </label>
+      <SettingLabel hint={hint}>{label}</SettingLabel>
       <div className="flex items-center gap-3">
         <button
           type="button"

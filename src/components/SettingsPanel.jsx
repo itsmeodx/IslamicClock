@@ -7,8 +7,9 @@ import { MAX_DST_OFFSET } from "../hooks/usePrayerTimes";
 import { useClock } from "../hooks/useClock";
 import ConfirmationModal from "./ConfirmationModal";
 import Stepper from "./common/Stepper";
+import SettingLabel from "./common/SettingLabel";
 
-function CustomSelect({ label, value, options, onChange }) {
+function CustomSelect({ label, hint, value, options, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -43,9 +44,7 @@ function CustomSelect({ label, value, options, onChange }) {
       className={`space-y-3 relative ${isOpen ? "z-50" : "z-10"}`}
       ref={containerRef}
     >
-      <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
-        {label}
-      </label>
+      <SettingLabel hint={hint}>{label}</SettingLabel>
       <div className="relative">
         <button
           type="button"
@@ -238,9 +237,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
 
               {/* Language */}
               <div className="space-y-3">
-                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
-                  {t.language}
-                </label>
+                <SettingLabel>{t.language}</SettingLabel>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleChange("language", "en")}
@@ -259,9 +256,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
 
               {/* Clock Mode */}
               <div className="space-y-3">
-                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
-                  {t.clockMode}
-                </label>
+                <SettingLabel>{t.clockMode}</SettingLabel>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => handleChange("clockMode", "analog")}
@@ -281,6 +276,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
               {/* Custom Dropdowns */}
               <CustomSelect
                 label={t.calculationMethod}
+                hint={t.calculationMethodHint}
                 value={settings.calculationMethod}
                 options={calcMethodOptions}
                 onChange={(val) => handleChange("calculationMethod", val)}
@@ -299,9 +295,9 @@ export default function SettingsPanel({ isOpen, onClose }) {
 
               {/* Prayer Settings Accordion */}
               <div className="space-y-3">
-                <label className="block text-xs text-heritage-amber uppercase font-bold tracking-widest px-1 mb-2">
+                <SettingLabel hint={t.prayerTimeAdjustmentsHint}>
                   {t.prayerTimeAdjustments}
-                </label>
+                </SettingLabel>
                 <div className="relative">
                   <button
                     type="button"
@@ -354,6 +350,7 @@ export default function SettingsPanel({ isOpen, onClose }) {
               {/* Hijri Date Adjustment */}
               <Stepper
                 label={t.hijriOffset}
+                hint={t.hijriOffsetHint}
                 value={hijriOffset}
                 min={-MAX_HIJRI_OFFSET}
                 max={MAX_HIJRI_OFFSET}
