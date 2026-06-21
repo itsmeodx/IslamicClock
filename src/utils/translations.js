@@ -76,7 +76,6 @@ export const translations = {
     show: "Show",
     refresh: "Refresh",
     githubRepoAria: "Visit GitHub repository",
-    githubRepoTitle: "View project on GitHub",
     locationRequired: "Location Required",
     locationDesc:
       "Allow location access for precise local times, or search for your city manually below.",
@@ -187,7 +186,6 @@ export const translations = {
     show: "إظهار",
     refresh: "تحديث",
     githubRepoAria: "زيارة مستودع GitHub",
-    githubRepoTitle: "عرض المشروع على GitHub",
     locationRequired: "تحديد الموقع مطلوب",
     locationDesc:
       "اسمح بالوصول إلى الموقع للحصول على أوقات دقيقة، أو ابحث عن مدينتك يدوياً أدناه.",

@@ -11,6 +11,8 @@ import HoverTooltip from "./components/common/HoverTooltip";
 import { translations } from "./utils/translations";
 import { MapPin, Settings } from "lucide-react";
 
+/* global __APP_VERSION__ */ // injected by Vite define from package.json
+
 const headerActionButtonClass =
   "w-12 h-12 heritage-card p-0! flex items-center justify-center border-heritage-gold/30 hover:bg-heritage-amber/10 transition-all duration-500 group";
 
@@ -67,29 +69,15 @@ export default function App() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <HeaderAction tooltip={t.githubRepoTitle}>
-            <a
-              href="https://github.com/itsmeodx/IslamicClock"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={headerActionButtonClass}
-              aria-label={t.githubRepoAria}
-            >
-              <GitHubIcon className="w-5 h-5 text-heritage-amber group-hover:scale-110 transition-transform duration-300" />
-            </a>
-          </HeaderAction>
-
-          <HeaderAction tooltip={t.settings}>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className={headerActionButtonClass}
-              aria-label={t.settingsAria}
-            >
-              <Settings className="w-6 h-6 text-heritage-amber group-hover:rotate-90 transition-transform duration-500" />
-            </button>
-          </HeaderAction>
-        </div>
+        <HeaderAction tooltip={t.settings}>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className={headerActionButtonClass}
+            aria-label={t.settingsAria}
+          >
+            <Settings className="w-6 h-6 text-heritage-amber group-hover:rotate-90 transition-transform duration-500" />
+          </button>
+        </HeaderAction>
       </div>
 
       {/* MAIN CONTENT */}
@@ -108,6 +96,22 @@ export default function App() {
           <DateDisplay />
         </div>
       </main>
+
+      {/* FOOTER */}
+      <footer className="w-full max-w-5xl mt-auto pt-2 flex items-center justify-center gap-3 text-xs text-white/40 z-10">
+        <a
+          href="https://github.com/itsmeodx/IslamicClock"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 hover:text-heritage-amber transition-colors duration-300"
+          aria-label={t.githubRepoAria}
+        >
+          <GitHubIcon className="w-4 h-4" />
+          GitHub
+        </a>
+        <span className="text-white/20">•</span>
+        <span className="tabular-nums">v{__APP_VERSION__}</span>
+      </footer>
 
       {/* MODALS & OVERLAYS */}
       <SettingsPanel
